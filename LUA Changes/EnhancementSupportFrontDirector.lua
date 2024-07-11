@@ -278,7 +278,7 @@ require( "ui/uieditor/widgets/director/directorselect_tabbar_center" )
 require( "x64:2ceea494103cb1e2" )
 require( "x64:334096eb04183443" )
 
--- Arena lobby
+-- Arena pregame lobby
 require( "x64:25587cd3245f1dc1" ) 
 require( "x64:4b236d88d3647924" ) 
 require( "x64:6def6a654efe7944" ) 
@@ -293,8 +293,53 @@ require( "x64:c89d021ac8b3747" )
 require( "x64:1ea788cab9c8c2f2" ) 
 require( "x64:72675595fa323085" ) 
 
----------------------------
+--Arena public lobby
+require( "x64:25587cd3245f1dc1" ) 
+require( "x64:4b236d88d3647924" ) 
+require( "x64:6def6a654efe7944" ) 
+require( "x64:67940364f14a232" ) 
+require( "x64:37b2e5c29b34a47e" ) 
+require( "x64:2d4ed3fd8d1fcc4a" ) 
+require( "x64:4e41af73729601d6" ) 
+require( "x64:1429ef25909713fe" ) 
+require( "x64:7233e193bf9509f4" ) 
 
+--playerlist
+require( "x64:10e2e99777310a68" ) 
+
+---------------------------
+--playerlist
+CoD.DirectorPublicPlayerListsContainer = InheritFrom( LUI.UIElement ) 
+CoD.DirectorPublicPlayerListsContainer.__defaultWidth = 425 
+CoD.DirectorPublicPlayerListsContainer.__defaultHeight = 0 
+CoD.DirectorPublicPlayerListsContainer.new = function ( f1_arg0, f1_arg1, f1_arg2, f1_arg3, f1_arg4, f1_arg5, f1_arg6, f1_arg7, f1_arg8, f1_arg9 )
+	local self = LUI.UIElement.new( f1_arg2, f1_arg3, f1_arg4, f1_arg5, f1_arg6, f1_arg7, f1_arg8, f1_arg9 ) 
+	self:setClass( CoD.DirectorPublicPlayerListsContainer ) 
+	self.id = "DirectorPublicPlayerListsContainer" 
+	self.soundSet = "default" 
+	self.onlyChildrenFocusable = true 
+	self.anyChildUsesUpdateState = true 
+	
+	local PartyList = CoD.DirectorPublicPlayerLists.new( f1_arg0, f1_arg1, 0.5, 0.5, -212.5, 212.5, 0, 0, 0, 1229 ) 
+	PartyList.PartyList:setVerticalCount( 7 )
+	PartyList.LobbyList:setVerticalCount( 11 ) 
+	self:addElement( PartyList ) 
+	self.PartyList = PartyList 
+	
+	PartyList.id = "PartyList" 
+	LUI.OverrideFunction_CallOriginalSecond( self, "close", self.__onClose ) 
+	
+	if PostLoadFunc then
+		PostLoadFunc( self, f1_arg1, f1_arg0 ) 
+	end
+	
+	return self
+end
+ 
+CoD.DirectorPublicPlayerListsContainer.__onClose = function ( f2_arg0 )
+	f2_arg0.PartyList:close() 
+end
+ 
 local function InitDvars()
 	-- reading c++ var
 	-- readjson
@@ -368,9 +413,16 @@ end
 
 local function LaunchGameFunction(Controller)
 	EnhPrintInfo(tostring(Controller))
-
+    Dvar[@"bot_difficulty"]:set(3)
 	Dvar[@"party_minplayers"]:set(1)
 	Engine[@"exec"](Engine[@"getprimarycontroller"](), "LobbyLaunchGame")
+end
+
+local function LaunchGameFunctionPublic(Controller)
+	EnhPrintInfo(tostring(Controller))
+    Dvar[@"bot_difficulty"]:set(3)
+	Dvar[@"party_minplayers"]:set(1)
+	--Engine[@"exec"](Engine[@"getprimarycontroller"](), "LobbyLaunchGame")
 end
 
 local function VM_ReloadMods()
@@ -3955,7 +4007,952 @@ CoD.DirectorQuitButtonContainer.__onClose = function ( f13_arg0 )
 	f13_arg0.Spacer2:close()
 end
 
--- Arena lobby offline
+--arena lobby online
+CoD.directorArenaMatchmaking = InheritFrom( LUI.UIElement ) 
+CoD.directorArenaMatchmaking.__defaultWidth = 1920 
+CoD.directorArenaMatchmaking.__defaultHeight = 1080 
+CoD.directorArenaMatchmaking.new = function ( f1_arg0, f1_arg1, f1_arg2, f1_arg3, f1_arg4, f1_arg5, f1_arg6, f1_arg7, f1_arg8, f1_arg9 )
+	local self = LUI.UIElement.new( f1_arg2, f1_arg3, f1_arg4, f1_arg5, f1_arg6, f1_arg7, f1_arg8, f1_arg9 ) 
+	CoD.DirectorUtility.InitPublicLobbyModels( self, f1_arg1, f1_arg0 ) 
+	CoD.PlayerRoleUtility.UpdatePositionDraftModels( f1_arg1 ) 
+	self:setClass( CoD.directorArenaMatchmaking ) 
+	self.id = "directorArenaMatchmaking" 
+	self.soundSet = "none" 
+	self.onlyChildrenFocusable = true 
+	self.anyChildUsesUpdateState = true 
+	f1_arg0:addElementToPendingUpdateStateList( self ) 
+	
+	local StageNotificationContainer = CoD.StageNotificationContainer.new( f1_arg0, f1_arg1, 0, 1, 0, 0, 0, 0, 0, 120 ) 
+	StageNotificationContainer:subscribeToGlobalModel( f1_arg1, "Arena", "arenaEventName", function ( model )
+		local f2_local0 = model:get() 
+		if f2_local0 ~= nil then
+			StageNotificationContainer.CommonHeader.subtitle.StageTitle:setText( ToUpper( f2_local0 ) ) 
+		end
+	end ) 
+	StageNotificationContainer:subscribeToGlobalModel( f1_arg1, "LobbyRoot", "publicLobby.stageDetails", function ( model )
+		local f3_local0 = model:get() 
+		if f3_local0 ~= nil then
+			StageNotificationContainer.CommonHeader.subtitle.subtitle:setText( ConvertToUpperString( CoD.BaseUtility.AlreadyLocalized( f3_local0 ) ) ) 
+		end
+	end ) 
+	self:addElement( StageNotificationContainer ) 
+	self.StageNotificationContainer = StageNotificationContainer 
+	
+	local TopBar = CoD.header_container_frontend.new( f1_arg0, f1_arg1, 0, 1, 0, 0, 0, 0, 0, 42 ) 
+	self:addElement( TopBar ) 
+	self.TopBar = TopBar 
+	
+	local f1_local3 = nil 
+	f1_local3 = LUI.UIElement.createFake() 
+	self.MapVote = f1_local3 
+	local MapVotePC = nil 
+	
+	MapVotePC = CoD.MapVote.new( f1_arg0, f1_arg1, 0.5, 0.5, -505, 406, 1, 1, -399, -184 ) 
+	MapVotePC:mergeStateConditions( {
+		{
+			stateName = "MapVote",
+			condition = function ( menu, element, event )
+				return CoD.LobbyUtility.MapVoteInState( LuaEnum.MAP_VOTE_STATE.VOTING ) and AlwaysFalse()
+			end
+		},
+		{
+			stateName = "MapVoteChosenNext",
+			condition = function ( menu, element, event )
+				local f5_local0 = CoD.LobbyUtility.MapVoteInState( LuaEnum.MAP_VOTE_STATE.LOCKEDIN ) 
+				if f5_local0 then
+					f5_local0 = CoD.ModelUtility.IsGlobalModelValueEqualToEnum( "MapVote.lobbyMapVoteType", Enum[@"hash_2F116421015E781B"][@"hash_4658B6B1B964D38A"] ) 
+					if f5_local0 then
+						f5_local0 = AlwaysFalse() 
+					end
+				end
+				return f5_local0
+			end
+		},
+		{
+			stateName = "MapVoteChosenPrevious",
+			condition = function ( menu, element, event )
+				local f6_local0 = CoD.LobbyUtility.MapVoteInState( LuaEnum.MAP_VOTE_STATE.LOCKEDIN ) 
+				if f6_local0 then
+					f6_local0 = CoD.ModelUtility.IsGlobalModelValueEqualToEnum( "MapVote.lobbyMapVoteType", Enum[@"hash_2F116421015E781B"][@"hash_6D8A67C2C1AF1036"] ) 
+					if f6_local0 then
+						f6_local0 = AlwaysFalse() 
+					end
+				end
+				return f6_local0
+			end
+		},
+		{
+			stateName = "MapVoteChosenRandom",
+			condition = function ( menu, element, event )
+				local f7_local0 = CoD.LobbyUtility.MapVoteInState( LuaEnum.MAP_VOTE_STATE.LOCKEDIN ) 
+				if f7_local0 then
+					f7_local0 = CoD.ModelUtility.IsGlobalModelValueEqualToEnum( "MapVote.lobbyMapVoteType", Enum[@"hash_2F116421015E781B"][@"hash_374A46A6237E75F4"] ) 
+					if f7_local0 then
+						f7_local0 = AlwaysFalse() 
+					end
+				end
+				return f7_local0
+			end
+		},
+		{
+			stateName = "SelectedMap",
+			condition = function ( menu, element, event )
+				local f8_local0 = CoD.LobbyUtility.MapVoteInState( LuaEnum.MAP_VOTE_STATE.LOCKEDIN ) 
+				if f8_local0 then
+					f8_local0 = CoD.ArenaUtility.ArenaMatchSet( self ) 
+					if f8_local0 then
+						f8_local0 = IsArenaMode() 
+					end
+				end
+				return f8_local0
+			end
+		}
+	} ) 
+	local overheadNameContainer = MapVotePC 
+	local DirectorReadyButton = MapVotePC.subscribeToModel 
+	local DirectorPreGameButton = Engine[@"hash_78DF2E5447F384B9"]() 
+	DirectorReadyButton( overheadNameContainer, DirectorPreGameButton["lobbyRoot.mapVote"], function ( f9_arg0 )
+		f1_arg0:updateElementState( MapVotePC, {
+			name = "model_validation",
+			menu = f1_arg0,
+			controller = f1_arg1,
+			modelValue = f9_arg0:get(),
+			modelName = "lobbyRoot.mapVote"
+		} ) 
+	end, false ) 
+	overheadNameContainer = MapVotePC 
+	DirectorReadyButton = MapVotePC.subscribeToModel 
+	DirectorPreGameButton = Engine[@"hash_78DF2E5447F384B9"]() 
+	DirectorReadyButton( overheadNameContainer, DirectorPreGameButton["lobbyRoot.lobbyNav"], function ( f10_arg0 )
+		f1_arg0:updateElementState( MapVotePC, {
+			name = "model_validation",
+			menu = f1_arg0,
+			controller = f1_arg1,
+			modelValue = f10_arg0:get(),
+			modelName = "lobbyRoot.lobbyNav"
+		} ) 
+	end, false ) 
+	overheadNameContainer = MapVotePC 
+	DirectorReadyButton = MapVotePC.subscribeToModel 
+	DirectorPreGameButton = Engine[@"hash_78DF2E5447F384B9"]() 
+	DirectorReadyButton( overheadNameContainer, DirectorPreGameButton["MapVote.lobbyMapVoteType"], function ( f11_arg0 )
+		f1_arg0:updateElementState( MapVotePC, {
+			name = "model_validation",
+			menu = f1_arg0,
+			controller = f1_arg1,
+			modelValue = f11_arg0:get(),
+			modelName = "MapVote.lobbyMapVoteType"
+		} ) 
+	end, false ) 
+	overheadNameContainer = MapVotePC 
+	DirectorReadyButton = MapVotePC.subscribeToModel 
+	DirectorPreGameButton = Engine[@"hash_78DF2E5447F384B9"]() 
+	DirectorReadyButton( overheadNameContainer, DirectorPreGameButton["lobbyRoot.publicLobby.stage"], function ( f12_arg0 )
+		f1_arg0:updateElementState( MapVotePC, {
+			name = "model_validation",
+			menu = f1_arg0,
+			controller = f1_arg1,
+			modelValue = f12_arg0:get(),
+			modelName = "lobbyRoot.publicLobby.stage"
+		} ) 
+	end, false ) 
+	self:addElement( MapVotePC ) 
+	self.MapVotePC = MapVotePC 
+	
+	DirectorReadyButton = CoD.DirectorReadyButton.new( f1_arg0, f1_arg1, 0.5, 0.5, 470, 896, 1, 1, -188, -108 ) 
+	DirectorReadyButton:setAlpha( 0 ) 
+	DirectorReadyButton.DirectorSelectButtonMiniInternal.MiddleText:setText( LocalizeToUpperString( @"hash_17A9F166E7248D86" ) ) 
+	DirectorReadyButton.DirectorSelectButtonMiniInternal.MiddleTextFocus:setText( LocalizeToUpperString( @"hash_17A9F166E7248D86" ) ) 
+	DirectorReadyButton.PlayText:setText( LocalizeToUpperString( @"hash_5E6F6113B8B75F3E" ) ) 
+	DirectorReadyButton:subscribeToGlobalModel( f1_arg1, "PerController", "ButtonBits." .. Enum[@"hash_3DD78803F918E9D"][@"hash_3755DA1E2E7C263F"], function ( model )
+		DirectorReadyButton:setModel( model, f1_arg1 ) 
+	end ) 
+	self:addElement( DirectorReadyButton ) 
+	self.DirectorReadyButton = DirectorReadyButton 
+	
+	overheadNameContainer = CoD.DynamicContainerWidget.new( f1_arg0, f1_arg1, 0.5, 0.5, -960, 960, 0, 0, 0, 1080 ) 
+	self:addElement( overheadNameContainer ) 
+	self.overheadNameContainer = overheadNameContainer 
+	
+	DirectorPreGameButton = CoD.DirectorPreGameButton.new( f1_arg0, f1_arg1, 0, 0, 536.5, 766.5, 1, 1, -178, -108 ) 
+	DirectorPreGameButton:mergeStateConditions( {
+		{
+			stateName = "Hidden",
+			condition = function ( menu, element, event )
+				return not IsBooleanDvarSet( "loot_enableBlackMarket" )
+			end
+		}
+	} ) 
+	DirectorPreGameButton:setAlpha( 0 ) 
+	DirectorPreGameButton.DirectorCustomStartButton.MiddleText:setText( LocalizeToUpperString( @"hash_229C903C6DF90D6F" ) ) 
+	DirectorPreGameButton.DirectorCustomStartButton.MiddleTextFocus:setText( LocalizeToUpperString( @"hash_229C903C6DF90D6F" ) ) 
+	DirectorPreGameButton:registerEventHandler( "gain_focus", function ( element, event )
+		local f15_local0 = nil 
+		if element.gainFocus then
+			f15_local0 = element:gainFocus( event ) 
+		elseif element.super.gainFocus then
+			f15_local0 = element.super:gainFocus( event ) 
+		end
+		CoD.Menu.UpdateButtonShownState( element, f1_arg0, f1_arg1, Enum[@"hash_3DD78803F918E9D"][@"hash_3755DA1E2E7C263F"] ) 
+		return f15_local0
+	end ) 
+	f1_arg0:AddButtonCallbackFunction( DirectorPreGameButton, f1_arg1, Enum[@"hash_3DD78803F918E9D"][@"hash_3755DA1E2E7C263F"], nil, function ( element, menu, controller, model )
+		OpenQuarterMaster( self, element, controller, "", menu ) 
+		return true
+	end, function ( element, menu, controller )
+		CoD.Menu.SetButtonLabel( menu, Enum[@"hash_3DD78803F918E9D"][@"hash_3755DA1E2E7C263F"], @"hash_229C903C6DF90D6F", nil, nil ) 
+		return true
+	end, false ) 
+	self:addElement( DirectorPreGameButton ) 
+	self.DirectorPreGameButton = DirectorPreGameButton 
+	
+	local ArenaEventButtons = CoD.ArenaEventButtons.new( f1_arg0, f1_arg1, 0.5, 0.5, 122, 322, 1, 1, -178, -108 ) 
+	ArenaEventButtons:setAlpha( 0 ) 
+	self:addElement( ArenaEventButtons ) 
+	self.ArenaEventButtons = ArenaEventButtons 
+	
+	local ArenaDailyBonus = CoD.ArenaDailyBonus.new( f1_arg0, f1_arg1, 0.5, 0.5, 122, 322, 1, 1, -258, -188 ) 
+	ArenaDailyBonus:setAlpha( 0 ) 
+	self:addElement( ArenaDailyBonus ) 
+	self.ArenaDailyBonus = ArenaDailyBonus 
+	
+	local ArenaEventProgressButton = CoD.ArenaEventProgressButton.new( f1_arg0, f1_arg1, 0.5, 0.5, 514, 896, 1, 1, -323, -243 ) 
+	self:addElement( ArenaEventProgressButton ) 
+	self.ArenaEventProgressButton = ArenaEventProgressButton 
+	
+	self:mergeStateConditions( {
+		{
+			stateName = "IsPC",
+			condition = function ( menu, element, event )
+				return IsPC()
+			end
+		}
+	} ) 
+
+	self:subscribeToGlobalModel( f1_arg1, "LobbyRoot", "gameClientDataUpdate", function ( model )
+		local f19_local0 = self 
+		if CoD.DirectorUtility.ShowDirectorArenaMatchmaking( f1_arg1 ) then
+			CoD.PlayerRoleUtility.UpdatePositionDraftModels( f1_arg1 ) 
+		end
+	end ) 
+	self:subscribeToGlobalModel( f1_arg1, "CharacterSelection", "clientUpdated", function ( model )
+		local f20_local0 = self 
+		if CoD.DirectorUtility.ShowDirectorArenaMatchmaking( f1_arg1 ) then
+			CoD.PlayerRoleUtility.UpdatePositionDraftModels( f1_arg1 ) 
+		end
+	end ) 
+	self:subscribeToGlobalModel( f1_arg1, "LobbyRoot", "lobbyNav", function ( model )
+		local f21_local0 = self 
+		if CoD.DirectorUtility.ShowDirectorArenaMatchmaking( f1_arg1 ) then
+			CoD.PlayerRoleUtility.UpdatePositionDraftModels( f1_arg1 ) 
+		end
+	end ) 
+	f1_local3.id = "MapVote" 
+	if CoD.isPC then
+		MapVotePC.id = "MapVotePC" 
+	end
+	
+    --custom lobby
+
+	local DirectorCustomLobbySettings = CoD.DirectorPreGameButtonOption.new( f1_arg0, f1_arg1, 0.5, 0.5, 720, 896, 1, 1, -158, -88 )
+	DirectorCustomLobbySettings:mergeStateConditions( {
+		{
+			stateName = "Visible",
+			condition = function ( menu, element, event )
+				return IsLobbyHostOfCurrentMenu()
+			end
+		}
+	} )
+	DirectorCustomLobbySettings:appendEventHandler( "on_session_start", function ( f3_arg0, f3_arg1 )
+		f3_arg1.menu = f3_arg1.menu or f1_arg0
+		f1_arg0:updateElementState( DirectorCustomLobbySettings, f3_arg1 )
+	end )
+	DirectorCustomLobbySettings:appendEventHandler( "on_session_end", function ( f4_arg0, f4_arg1 )
+		f4_arg1.menu = f4_arg1.menu or f1_arg0
+		f1_arg0:updateElementState( DirectorCustomLobbySettings, f4_arg1 )
+	end )
+	local RemoveBotButton = DirectorCustomLobbySettings
+	local AddBotButton = DirectorCustomLobbySettings.subscribeToModel
+	local f1_local4 = Engine[@"getglobalmodel"]()
+	AddBotButton( RemoveBotButton, f1_local4["lobbyRoot.lobbyNav"], function ( f5_arg0 )
+		f1_arg0:updateElementState( DirectorCustomLobbySettings, {
+			name = "model_validation",
+			menu = f1_arg0,
+			controller = f1_arg1,
+			modelValue = f5_arg0:get(),
+			modelName = "lobbyRoot.lobbyNav"
+		} )
+	end, false )
+	RemoveBotButton = DirectorCustomLobbySettings
+	AddBotButton = DirectorCustomLobbySettings.subscribeToModel
+	f1_local4 = Engine[@"getglobalmodel"]()
+	AddBotButton( RemoveBotButton, f1_local4["lobbyRoot.gameClient.update"], function ( f6_arg0 )
+		f1_arg0:updateElementState( DirectorCustomLobbySettings, {
+			name = "model_validation",
+			menu = f1_arg0,
+			controller = f1_arg1,
+			modelValue = f6_arg0:get(),
+			modelName = "lobbyRoot.gameClient.update"
+		} )
+	end, false )
+	RemoveBotButton = DirectorCustomLobbySettings
+	AddBotButton = DirectorCustomLobbySettings.subscribeToModel
+	f1_local4 = Engine[@"getglobalmodel"]()
+	AddBotButton( RemoveBotButton, f1_local4["lobbyRoot.privateClient.update"], function ( f7_arg0 )
+		f1_arg0:updateElementState( DirectorCustomLobbySettings, {
+			name = "model_validation",
+			menu = f1_arg0,
+			controller = f1_arg1,
+			modelValue = f7_arg0:get(),
+			modelName = "lobbyRoot.privateClient.update"
+		} )
+	end, false )
+	RemoveBotButton = DirectorCustomLobbySettings
+	AddBotButton = DirectorCustomLobbySettings.subscribeToModel
+	f1_local4 = Engine[@"getglobalmodel"]()
+	AddBotButton( RemoveBotButton, f1_local4.offlineScreenState, function ( f8_arg0 )
+		f1_arg0:updateElementState( DirectorCustomLobbySettings, {
+			name = "model_validation",
+			menu = f1_arg0,
+			controller = f1_arg1,
+			modelValue = f8_arg0:get(),
+			modelName = "offlineScreenState"
+		} )
+	end, false )
+	DirectorCustomLobbySettings.DirectorSelectButtonMiniInternal.MiddleText:setText( Engine[@"hash_4F9F1239CFD921FE"]( @"hash_2FA47140D97F89D" ) )
+	DirectorCustomLobbySettings.DirectorSelectButtonMiniInternal.MiddleText:setTTF("ttmussels_regular")
+	DirectorCustomLobbySettings.DirectorSelectButtonMiniInternal.MiddleTextFocus:setText( Engine[@"hash_4F9F1239CFD921FE"]( @"hash_2FA47140D97F89D" ) )
+	DirectorCustomLobbySettings.DirectorSelectButtonMiniInternal.MiddleTextFocus:setTTF("ttmussels_regular")
+	DirectorCustomLobbySettings:appendEventHandler( "on_session_start", function ( f9_arg0, f9_arg1 )
+		f9_arg1.menu = f9_arg1.menu or f1_arg0
+		CoD.Menu.UpdateButtonShownState( f9_arg0, f1_arg0, f1_arg1, Enum[@"luibutton"][@"lui_key_xba_pscross"] )
+	end )
+	DirectorCustomLobbySettings:appendEventHandler( "on_session_end", function ( f10_arg0, f10_arg1 )
+		f10_arg1.menu = f10_arg1.menu or f1_arg0
+		CoD.Menu.UpdateButtonShownState( f10_arg0, f1_arg0, f1_arg1, Enum[@"luibutton"][@"lui_key_xba_pscross"] )
+	end )
+	RemoveBotButton = DirectorCustomLobbySettings
+	AddBotButton = DirectorCustomLobbySettings.subscribeToModel
+	f1_local4 = Engine[@"getglobalmodel"]()
+	AddBotButton( RemoveBotButton, f1_local4["lobbyRoot.lobbyNav"], function ( f11_arg0, f11_arg1 )
+		CoD.Menu.UpdateButtonShownState( f11_arg1, f1_arg0, f1_arg1, Enum[@"luibutton"][@"lui_key_xba_pscross"] )
+	end, false )
+	RemoveBotButton = DirectorCustomLobbySettings
+	AddBotButton = DirectorCustomLobbySettings.subscribeToModel
+	f1_local4 = Engine[@"getglobalmodel"]()
+	AddBotButton( RemoveBotButton, f1_local4["lobbyRoot.gameClient.update"], function ( f12_arg0, f12_arg1 )
+		CoD.Menu.UpdateButtonShownState( f12_arg1, f1_arg0, f1_arg1, Enum[@"luibutton"][@"lui_key_xba_pscross"] )
+	end, false )
+	RemoveBotButton = DirectorCustomLobbySettings
+	AddBotButton = DirectorCustomLobbySettings.subscribeToModel
+	f1_local4 = Engine[@"getglobalmodel"]()
+	AddBotButton( RemoveBotButton, f1_local4["lobbyRoot.privateClient.update"], function ( f13_arg0, f13_arg1 )
+		CoD.Menu.UpdateButtonShownState( f13_arg1, f1_arg0, f1_arg1, Enum[@"luibutton"][@"lui_key_xba_pscross"] )
+	end, false )
+	DirectorCustomLobbySettings:appendEventHandler( "input_source_changed", function ( f14_arg0, f14_arg1 )
+		f14_arg1.menu = f14_arg1.menu or f1_arg0
+		CoD.Menu.UpdateButtonShownState( f14_arg0, f1_arg0, f1_arg1, Enum[@"luibutton"][@"lui_key_xba_pscross"] )
+	end )
+	RemoveBotButton = DirectorCustomLobbySettings
+	AddBotButton = DirectorCustomLobbySettings.subscribeToModel
+	f1_local4 = Engine[@"getmodelforcontroller"]( f1_arg1 )
+	AddBotButton( RemoveBotButton, f1_local4.LastInput, function ( f15_arg0, f15_arg1 )
+		CoD.Menu.UpdateButtonShownState( f15_arg1, f1_arg0, f1_arg1, Enum[@"luibutton"][@"lui_key_xba_pscross"] )
+	end, false )
+	DirectorCustomLobbySettings:registerEventHandler( "gain_focus", function ( element, event )
+		local f16_local0 = nil
+		if element.gainFocus then
+			f16_local0 = element:gainFocus( event )
+		elseif element.super.gainFocus then
+			f16_local0 = element.super:gainFocus( event )
+		end
+		CoD.Menu.UpdateButtonShownState( element, f1_arg0, f1_arg1, Enum[@"luibutton"][@"lui_key_xba_pscross"] )
+		return f16_local0
+	end )
+	f1_arg0:AddButtonCallbackFunction( DirectorCustomLobbySettings, f1_arg1, Enum[@"luibutton"][@"lui_key_xba_pscross"], "ui_confirm", function ( element, menu, controller, model )
+		
+		if IsLobbyHostOfCurrentMenu() and IsZombies() then
+			PlaySoundAlias( "uin_toggle_generic" )
+			CoD.DirectorUtility.DirectorOpenOverlayWithCurrentMenuMode( menu, controller, "DirectorCustomGameSetUpWZ" )
+			--CoD.LobbyUtility.SetLeaderActivityAndOpenOverlay( self, controller, CoD.LobbyUtility.LeaderActivity.CHOOSING_MAP, "DirectorChooseMapAndGameType" )
+			--CoD.LobbyUtility.OpenEditGameRules(self, controller)
+		return true
+
+		elseif IsLobbyHostOfCurrentMenu() then
+			PlaySoundAlias( "uin_toggle_generic" )
+			CoD.DirectorUtility.DirectorOpenOverlayWithCurrentMenuMode( menu, controller, "DirectorCustomGameSetUp" )
+			--CoD.LobbyUtility.SetLeaderActivityAndOpenOverlay(self, controller, CoD.LobbyUtility.LeaderActivity.CHOOSING_MAP, "DirectorChooseMapAndGameType")
+			return true
+		else
+			
+		end
+	end, function ( element, menu, controller )
+		if IsLobbyHostOfCurrentMenu() and IsMouseOrKeyboard( controller ) then
+			CoD.Menu.SetButtonLabel( menu, Enum[@"luibutton"][@"lui_key_xba_pscross"], @"hash_0", nil, "ui_confirm" )
+			return false
+		elseif IsLobbyHostOfCurrentMenu() then
+			CoD.Menu.SetButtonLabel( menu, Enum[@"luibutton"][@"lui_key_xba_pscross"], @"hash_761333AE050EC552", nil, "ui_confirm" )
+			return true
+		else
+			return false
+		end
+	end, false )
+	self:addElement( DirectorCustomLobbySettings )
+	self.DirectorCustomLobbySettings = DirectorCustomLobbySettings
+	
+	AddBotButton = CoD.DirectorPreGameButtonOption.new( f1_arg0, f1_arg1, 0.5, 0.5, 720, 896, 1, 1, -238, -168 )
+	AddBotButton:mergeStateConditions( {
+		{
+			stateName = "Unselectable",
+			condition = function ( menu, element, event )
+				return AlwaysFalse()
+			end
+		},
+		{
+			stateName = "Visible",
+			condition = function ( menu, element, event )
+				return IsLobbyHostOfCurrentMenu()
+			end
+		}
+	} )
+	AddBotButton:appendEventHandler( "on_session_start", function ( f21_arg0, f21_arg1 )
+		f21_arg1.menu = f21_arg1.menu or f1_arg0
+		f1_arg0:updateElementState( AddBotButton, f21_arg1 )
+	end )
+	AddBotButton:appendEventHandler( "on_session_end", function ( f22_arg0, f22_arg1 )
+		f22_arg1.menu = f22_arg1.menu or f1_arg0
+		f1_arg0:updateElementState( AddBotButton, f22_arg1 )
+	end )
+	f1_local4 = AddBotButton
+	RemoveBotButton = AddBotButton.subscribeToModel
+	local f1_local5 = Engine[@"getglobalmodel"]()
+	RemoveBotButton( f1_local4, f1_local5["lobbyRoot.lobbyNav"], function ( f23_arg0 )
+		f1_arg0:updateElementState( AddBotButton, {
+			name = "model_validation",
+			menu = f1_arg0,
+			controller = f1_arg1,
+			modelValue = f23_arg0:get(),
+			modelName = "lobbyRoot.lobbyNav"
+		} )
+	end, false )
+	f1_local4 = AddBotButton
+	RemoveBotButton = AddBotButton.subscribeToModel
+	f1_local5 = Engine[@"getglobalmodel"]()
+	RemoveBotButton( f1_local4, f1_local5["lobbyRoot.gameClient.update"], function ( f24_arg0 )
+		f1_arg0:updateElementState( AddBotButton, {
+			name = "model_validation",
+			menu = f1_arg0,
+			controller = f1_arg1,
+			modelValue = f24_arg0:get(),
+			modelName = "lobbyRoot.gameClient.update"
+		} )
+	end, false )
+	f1_local4 = AddBotButton
+	RemoveBotButton = AddBotButton.subscribeToModel
+	f1_local5 = Engine[@"getglobalmodel"]()
+	RemoveBotButton( f1_local4, f1_local5["lobbyRoot.privateClient.update"], function ( f25_arg0 )
+		f1_arg0:updateElementState( AddBotButton, {
+			name = "model_validation",
+			menu = f1_arg0,
+			controller = f1_arg1,
+			modelValue = f25_arg0:get(),
+			modelName = "lobbyRoot.privateClient.update"
+		} )
+	end, false )
+	f1_local4 = AddBotButton
+	RemoveBotButton = AddBotButton.subscribeToModel
+	f1_local5 = Engine[@"getglobalmodel"]()
+	RemoveBotButton( f1_local4, f1_local5["PartyPrivacy.maxPlayers"], function ( f26_arg0 )
+		f1_arg0:updateElementState( AddBotButton, {
+			name = "model_validation",
+			menu = f1_arg0,
+			controller = f1_arg1,
+			modelValue = f26_arg0:get(),
+			modelName = "PartyPrivacy.maxPlayers"
+		} )
+	end, false )
+	f1_local4 = AddBotButton
+	RemoveBotButton = AddBotButton.subscribeToModel
+	f1_local5 = Engine[@"getglobalmodel"]()
+	RemoveBotButton( f1_local4, f1_local5.offlineScreenState, function ( f27_arg0 )
+		f1_arg0:updateElementState( AddBotButton, {
+			name = "model_validation",
+			menu = f1_arg0,
+			controller = f1_arg1,
+			modelValue = f27_arg0:get(),
+			modelName = "offlineScreenState"
+		} )
+	end, false )
+	f1_local4 = AddBotButton
+	RemoveBotButton = AddBotButton.subscribeToModel
+	f1_local5 = Engine[@"getglobalmodel"]()
+	RemoveBotButton( f1_local4, f1_local5["MapVote.mapVoteGameModeNext"], function ( f28_arg0 )
+		f1_arg0:updateElementState( AddBotButton, {
+			name = "model_validation",
+			menu = f1_arg0,
+			controller = f1_arg1,
+			modelValue = f28_arg0:get(),
+			modelName = "MapVote.mapVoteGameModeNext"
+		} )
+	end, false )
+	AddBotButton.DirectorSelectButtonMiniInternal.MiddleText:setText( Engine[@"hash_4F9F1239CFD921FE"]( @"hash_141A80D9A928673E" ) )
+	AddBotButton.DirectorSelectButtonMiniInternal.MiddleText:setTTF("ttmussels_regular")
+	AddBotButton.DirectorSelectButtonMiniInternal.MiddleTextFocus:setText( Engine[@"hash_4F9F1239CFD921FE"]( @"hash_141A80D9A928673E" ) )
+	AddBotButton.DirectorSelectButtonMiniInternal.MiddleTextFocus:setTTF("ttmussels_regular")
+	AddBotButton:appendEventHandler( "on_session_start", function ( f29_arg0, f29_arg1 )
+		f29_arg1.menu = f29_arg1.menu or f1_arg0
+		CoD.Menu.UpdateButtonShownState( f29_arg0, f1_arg0, f1_arg1, Enum[@"luibutton"][@"lui_key_xba_pscross"] )
+	end )
+	AddBotButton:appendEventHandler( "on_session_end", function ( f30_arg0, f30_arg1 )
+		f30_arg1.menu = f30_arg1.menu or f1_arg0
+		CoD.Menu.UpdateButtonShownState( f30_arg0, f1_arg0, f1_arg1, Enum[@"luibutton"][@"lui_key_xba_pscross"] )
+	end )
+	f1_local4 = AddBotButton
+	RemoveBotButton = AddBotButton.subscribeToModel
+	f1_local5 = Engine[@"getglobalmodel"]()
+	RemoveBotButton( f1_local4, f1_local5["lobbyRoot.lobbyNav"], function ( f31_arg0, f31_arg1 )
+		CoD.Menu.UpdateButtonShownState( f31_arg1, f1_arg0, f1_arg1, Enum[@"luibutton"][@"lui_key_xba_pscross"] )
+	end, false )
+	f1_local4 = AddBotButton
+	RemoveBotButton = AddBotButton.subscribeToModel
+	f1_local5 = Engine[@"getglobalmodel"]()
+	RemoveBotButton( f1_local4, f1_local5["lobbyRoot.gameClient.update"], function ( f32_arg0, f32_arg1 )
+		CoD.Menu.UpdateButtonShownState( f32_arg1, f1_arg0, f1_arg1, Enum[@"luibutton"][@"lui_key_xba_pscross"] )
+	end, false )
+	f1_local4 = AddBotButton
+	RemoveBotButton = AddBotButton.subscribeToModel
+	f1_local5 = Engine[@"getglobalmodel"]()
+	RemoveBotButton( f1_local4, f1_local5["lobbyRoot.privateClient.update"], function ( f33_arg0, f33_arg1 )
+		CoD.Menu.UpdateButtonShownState( f33_arg1, f1_arg0, f1_arg1, Enum[@"luibutton"][@"lui_key_xba_pscross"] )
+	end, false )
+	AddBotButton:appendEventHandler( "input_source_changed", function ( f34_arg0, f34_arg1 )
+		f34_arg1.menu = f34_arg1.menu or f1_arg0
+		CoD.Menu.UpdateButtonShownState( f34_arg0, f1_arg0, f1_arg1, Enum[@"luibutton"][@"lui_key_xba_pscross"] )
+	end )
+	f1_local4 = AddBotButton
+	RemoveBotButton = AddBotButton.subscribeToModel
+	f1_local5 = Engine[@"getmodelforcontroller"]( f1_arg1 )
+	RemoveBotButton( f1_local4, f1_local5.LastInput, function ( f35_arg0, f35_arg1 )
+		CoD.Menu.UpdateButtonShownState( f35_arg1, f1_arg0, f1_arg1, Enum[@"luibutton"][@"lui_key_xba_pscross"] )
+	end, false )
+	f1_local4 = AddBotButton
+	RemoveBotButton = AddBotButton.subscribeToModel
+	f1_local5 = Engine[@"getglobalmodel"]()
+	RemoveBotButton( f1_local4, f1_local5["PartyPrivacy.maxPlayers"], function ( f36_arg0, f36_arg1 )
+		CoD.Menu.UpdateButtonShownState( f36_arg1, f1_arg0, f1_arg1, Enum[@"luibutton"][@"lui_key_xba_pscross"] )
+	end, false )
+	AddBotButton:registerEventHandler( "gain_focus", function ( element, event )
+		local f37_local0 = nil
+		if element.gainFocus then
+			f37_local0 = element:gainFocus( event )
+		elseif element.super.gainFocus then
+			f37_local0 = element.super:gainFocus( event )
+		end
+		CoD.Menu.UpdateButtonShownState( element, f1_arg0, f1_arg1, Enum[@"luibutton"][@"lui_key_xba_pscross"] )
+		return f37_local0
+	end )
+	f1_arg0:AddButtonCallbackFunction( AddBotButton, f1_arg1, Enum[@"luibutton"][@"lui_key_xba_pscross"], "ui_confirm", function ( element, menu, controller, model )
+		if IsLobbyHostOfCurrentMenu() and IsBooleanDvarSet( "lobby_hostBots" ) and IsMouseOrKeyboard( controller ) and CoD.LobbyUtility.CanAddMoreBotsToLobby() then
+			PlaySoundAlias( "uin_toggle_generic" )
+			AddLobbyBots( menu, controller )
+			return true
+		elseif IsLobbyHostOfCurrentMenu() and IsBooleanDvarSet( "lobby_hostBots" ) and CoD.LobbyUtility.CanAddMoreBotsToLobby() then
+			PlaySoundAlias( "uin_toggle_generic" )
+			AddLobbyBots( menu, controller )
+			return true
+		else
+			
+		end
+	end, function ( element, menu, controller )
+		if IsLobbyHostOfCurrentMenu() and IsBooleanDvarSet( "lobby_hostBots" ) and IsMouseOrKeyboard( controller ) and CoD.LobbyUtility.CanAddMoreBotsToLobby() then
+			CoD.Menu.SetButtonLabel( menu, Enum[@"luibutton"][@"lui_key_xba_pscross"], @"hash_0", nil, "ui_confirm" )
+			return false
+		elseif IsLobbyHostOfCurrentMenu() and IsBooleanDvarSet( "lobby_hostBots" ) and CoD.LobbyUtility.CanAddMoreBotsToLobby() then
+			CoD.Menu.SetButtonLabel( menu, Enum[@"luibutton"][@"lui_key_xba_pscross"], @"hash_761333AE050EC552", nil, "ui_confirm" )
+			return true
+		else
+			return false
+		end
+	end, false )
+	self:addElement( AddBotButton )
+	self.AddBotButton = AddBotButton
+
+    local LaunchGameButton = CoD.DirectorPreGameButtonOption.new(f1_arg0, f1_arg1, 0.5, 0.5, 514, 710, 1, 1, -158, -88)
+	LaunchGameButton:mergeStateConditions( {
+		{
+			stateName = "Unselectable",
+			condition = function ( menu, element, event )
+				return AlwaysFalse()
+			end
+		},
+		{
+			stateName = "Visible",
+			condition = function ( menu, element, event )
+				return IsLobbyHostOfCurrentMenu()
+			end
+		}
+	} )
+	LaunchGameButton:appendEventHandler( "on_session_start", function ( f21_arg0, f21_arg1 )
+		f21_arg1.menu = f21_arg1.menu or f1_arg0
+		f1_arg0:updateElementState( LaunchGameButton, f21_arg1 )
+	end )
+	LaunchGameButton:appendEventHandler( "on_session_end", function ( f22_arg0, f22_arg1 )
+		f22_arg1.menu = f22_arg1.menu or f1_arg0
+		f1_arg0:updateElementState( LaunchGameButton, f22_arg1 )
+	end )
+	f1_local4 = LaunchGameButton
+	RemoveBotButton = LaunchGameButton.subscribeToModel
+	local f1_local5 = Engine[@"getglobalmodel"]()
+	RemoveBotButton( f1_local4, f1_local5["lobbyRoot.lobbyNav"], function ( f23_arg0 )
+		f1_arg0:updateElementState( LaunchGameButton, {
+			name = "model_validation",
+			menu = f1_arg0,
+			controller = f1_arg1,
+			modelValue = f23_arg0:get(),
+			modelName = "lobbyRoot.lobbyNav"
+		} )
+	end, false )
+	f1_local4 = LaunchGameButton
+	RemoveBotButton = LaunchGameButton.subscribeToModel
+	f1_local5 = Engine[@"getglobalmodel"]()
+	RemoveBotButton( f1_local4, f1_local5["lobbyRoot.gameClient.update"], function ( f24_arg0 )
+		f1_arg0:updateElementState( LaunchGameButton, {
+			name = "model_validation",
+			menu = f1_arg0,
+			controller = f1_arg1,
+			modelValue = f24_arg0:get(),
+			modelName = "lobbyRoot.gameClient.update"
+		} )
+	end, false )
+	f1_local4 = LaunchGameButton
+	RemoveBotButton = LaunchGameButton.subscribeToModel
+	f1_local5 = Engine[@"getglobalmodel"]()
+	RemoveBotButton( f1_local4, f1_local5["lobbyRoot.privateClient.update"], function ( f25_arg0 )
+		f1_arg0:updateElementState( LaunchGameButton, {
+			name = "model_validation",
+			menu = f1_arg0,
+			controller = f1_arg1,
+			modelValue = f25_arg0:get(),
+			modelName = "lobbyRoot.privateClient.update"
+		} )
+	end, false )
+	f1_local4 = LaunchGameButton
+	RemoveBotButton = LaunchGameButton.subscribeToModel
+	f1_local5 = Engine[@"getglobalmodel"]()
+	RemoveBotButton( f1_local4, f1_local5["PartyPrivacy.maxPlayers"], function ( f26_arg0 )
+		f1_arg0:updateElementState( LaunchGameButton, {
+			name = "model_validation",
+			menu = f1_arg0,
+			controller = f1_arg1,
+			modelValue = f26_arg0:get(),
+			modelName = "PartyPrivacy.maxPlayers"
+		} )
+	end, false )
+	f1_local4 = LaunchGameButton
+	RemoveBotButton = LaunchGameButton.subscribeToModel
+	f1_local5 = Engine[@"getglobalmodel"]()
+	RemoveBotButton( f1_local4, f1_local5.offlineScreenState, function ( f27_arg0 )
+		f1_arg0:updateElementState( LaunchGameButton, {
+			name = "model_validation",
+			menu = f1_arg0,
+			controller = f1_arg1,
+			modelValue = f27_arg0:get(),
+			modelName = "offlineScreenState"
+		} )
+	end, false )
+	f1_local4 = LaunchGameButton
+	RemoveBotButton = LaunchGameButton.subscribeToModel
+	f1_local5 = Engine[@"getglobalmodel"]()
+	RemoveBotButton( f1_local4, f1_local5["MapVote.mapVoteGameModeNext"], function ( f28_arg0 )
+		f1_arg0:updateElementState( LaunchGameButton, {
+			name = "model_validation",
+			menu = f1_arg0,
+			controller = f1_arg1,
+			modelValue = f28_arg0:get(),
+			modelName = "MapVote.mapVoteGameModeNext"
+		} )
+	end, false )
+	LaunchGameButton.DirectorSelectButtonMiniInternal.MiddleText:setText( LocalizeToUpperString( @"hash_6DDDA371285672BD" ) )
+	LaunchGameButton.DirectorSelectButtonMiniInternal.MiddleText:setTTF("ttmussels_regular")
+	LaunchGameButton.DirectorSelectButtonMiniInternal.MiddleTextFocus:setText( LocalizeToUpperString( @"hash_6DDDA371285672BD" ) )
+	LaunchGameButton.DirectorSelectButtonMiniInternal.MiddleTextFocus:setTTF("ttmussels_regular")
+	LaunchGameButton:appendEventHandler( "on_session_start", function ( f29_arg0, f29_arg1 )
+		f29_arg1.menu = f29_arg1.menu or f1_arg0
+		CoD.Menu.UpdateButtonShownState( f29_arg0, f1_arg0, f1_arg1, Enum[@"luibutton"][@"lui_key_xba_pscross"] )
+	end )
+	LaunchGameButton:appendEventHandler( "on_session_end", function ( f30_arg0, f30_arg1 )
+		f30_arg1.menu = f30_arg1.menu or f1_arg0
+		CoD.Menu.UpdateButtonShownState( f30_arg0, f1_arg0, f1_arg1, Enum[@"luibutton"][@"lui_key_xba_pscross"] )
+	end )
+	f1_local4 = LaunchGameButton
+	RemoveBotButton = LaunchGameButton.subscribeToModel
+	f1_local5 = Engine[@"getglobalmodel"]()
+	RemoveBotButton( f1_local4, f1_local5["lobbyRoot.lobbyNav"], function ( f31_arg0, f31_arg1 )
+		CoD.Menu.UpdateButtonShownState( f31_arg1, f1_arg0, f1_arg1, Enum[@"luibutton"][@"lui_key_xba_pscross"] )
+	end, false )
+	f1_local4 = LaunchGameButton
+	RemoveBotButton = LaunchGameButton.subscribeToModel
+	f1_local5 = Engine[@"getglobalmodel"]()
+	RemoveBotButton( f1_local4, f1_local5["lobbyRoot.gameClient.update"], function ( f32_arg0, f32_arg1 )
+		CoD.Menu.UpdateButtonShownState( f32_arg1, f1_arg0, f1_arg1, Enum[@"luibutton"][@"lui_key_xba_pscross"] )
+	end, false )
+	f1_local4 = LaunchGameButton
+	RemoveBotButton = LaunchGameButton.subscribeToModel
+	f1_local5 = Engine[@"getglobalmodel"]()
+	RemoveBotButton( f1_local4, f1_local5["lobbyRoot.privateClient.update"], function ( f33_arg0, f33_arg1 )
+		CoD.Menu.UpdateButtonShownState( f33_arg1, f1_arg0, f1_arg1, Enum[@"luibutton"][@"lui_key_xba_pscross"] )
+	end, false )
+	LaunchGameButton:appendEventHandler( "input_source_changed", function ( f34_arg0, f34_arg1 )
+		f34_arg1.menu = f34_arg1.menu or f1_arg0
+		CoD.Menu.UpdateButtonShownState( f34_arg0, f1_arg0, f1_arg1, Enum[@"luibutton"][@"lui_key_xba_pscross"] )
+	end )
+	f1_local4 = LaunchGameButton
+	RemoveBotButton = LaunchGameButton.subscribeToModel
+	f1_local5 = Engine[@"getmodelforcontroller"]( f1_arg1 )
+	RemoveBotButton( f1_local4, f1_local5.LastInput, function ( f35_arg0, f35_arg1 )
+		CoD.Menu.UpdateButtonShownState( f35_arg1, f1_arg0, f1_arg1, Enum[@"luibutton"][@"lui_key_xba_pscross"] )
+	end, false )
+	f1_local4 = LaunchGameButton
+	RemoveBotButton = LaunchGameButton.subscribeToModel
+	f1_local5 = Engine[@"getglobalmodel"]()
+	RemoveBotButton( f1_local4, f1_local5["PartyPrivacy.maxPlayers"], function ( f36_arg0, f36_arg1 )
+		CoD.Menu.UpdateButtonShownState( f36_arg1, f1_arg0, f1_arg1, Enum[@"luibutton"][@"lui_key_xba_pscross"] )
+	end, false )
+	LaunchGameButton:registerEventHandler( "gain_focus", function ( element, event )
+		local f37_local0 = nil
+		if element.gainFocus then
+			f37_local0 = element:gainFocus( event )
+		elseif element.super.gainFocus then
+			f37_local0 = element.super:gainFocus( event )
+		end
+		CoD.Menu.UpdateButtonShownState( element, f1_arg0, f1_arg1, Enum[@"luibutton"][@"lui_key_xba_pscross"] )
+		return f37_local0
+	end )
+	f1_arg0:AddButtonCallbackFunction( LaunchGameButton, f1_arg1, Enum[@"luibutton"][@"lui_key_xba_pscross"], "ui_confirm", function ( element, menu, controller, model )
+		if IsLobbyHostOfCurrentMenu() then
+			PlaySoundAlias( "uin_toggle_generic" )
+			LaunchGameFunctionPublic(controller)
+			--Engine[@"exec"](Engine[@"getprimarycontroller"](), "LobbyLaunchGame")
+			return true
+		else
+			-- fuck off
+		end
+	end, function ( element, menu, controller )
+		if IsLobbyHostOfCurrentMenu() and IsBooleanDvarSet( "lobby_hostBots" ) and IsMouseOrKeyboard( controller ) and CoD.LobbyUtility.CanAddMoreBotsToLobby() then
+			CoD.Menu.SetButtonLabel( menu, Enum[@"luibutton"][@"lui_key_xba_pscross"], @"hash_0", nil, "ui_confirm" )
+			return false
+		elseif IsLobbyHostOfCurrentMenu() and IsBooleanDvarSet( "lobby_hostBots" ) and CoD.LobbyUtility.CanAddMoreBotsToLobby() then
+			CoD.Menu.SetButtonLabel( menu, Enum[@"luibutton"][@"lui_key_xba_pscross"], @"hash_761333AE050EC552", nil, "ui_confirm" )
+			return true
+		else
+			return false
+		end
+	end, false )
+	self:addElement( LaunchGameButton )
+	self.LaunchGameButton = LaunchGameButton
+	
+	RemoveBotButton = CoD.DirectorPreGameButtonOption.new( f1_arg0, f1_arg1, 0.5, 0.5, 514, 710, 1, 1, -238, -168 )
+	RemoveBotButton:mergeStateConditions( {
+		{
+			stateName = "Visible",
+			condition = function ( menu, element, event )
+				return IsLobbyHostOfCurrentMenu()
+			end
+		}
+	} )
+	RemoveBotButton:appendEventHandler( "on_session_start", function ( f41_arg0, f41_arg1 )
+		f41_arg1.menu = f41_arg1.menu or f1_arg0
+		f1_arg0:updateElementState( RemoveBotButton, f41_arg1 )
+	end )
+	RemoveBotButton:appendEventHandler( "on_session_end", function ( f42_arg0, f42_arg1 )
+		f42_arg1.menu = f42_arg1.menu or f1_arg0
+		f1_arg0:updateElementState( RemoveBotButton, f42_arg1 )
+	end )
+	f1_local5 = RemoveBotButton
+	f1_local4 = RemoveBotButton.subscribeToModel
+	local f1_local6 = Engine[@"getglobalmodel"]()
+	f1_local4( f1_local5, f1_local6["lobbyRoot.lobbyNav"], function ( f43_arg0 )
+		f1_arg0:updateElementState( RemoveBotButton, {
+			name = "model_validation",
+			menu = f1_arg0,
+			controller = f1_arg1,
+			modelValue = f43_arg0:get(),
+			modelName = "lobbyRoot.lobbyNav"
+		} )
+	end, false )
+	f1_local5 = RemoveBotButton
+	f1_local4 = RemoveBotButton.subscribeToModel
+	f1_local6 = Engine[@"getglobalmodel"]()
+	f1_local4( f1_local5, f1_local6["lobbyRoot.gameClient.update"], function ( f44_arg0 )
+		f1_arg0:updateElementState( RemoveBotButton, {
+			name = "model_validation",
+			menu = f1_arg0,
+			controller = f1_arg1,
+			modelValue = f44_arg0:get(),
+			modelName = "lobbyRoot.gameClient.update"
+		} )
+	end, false )
+	f1_local5 = RemoveBotButton
+	f1_local4 = RemoveBotButton.subscribeToModel
+	f1_local6 = Engine[@"getglobalmodel"]()
+	f1_local4( f1_local5, f1_local6["lobbyRoot.privateClient.update"], function ( f45_arg0 )
+		f1_arg0:updateElementState( RemoveBotButton, {
+			name = "model_validation",
+			menu = f1_arg0,
+			controller = f1_arg1,
+			modelValue = f45_arg0:get(),
+			modelName = "lobbyRoot.privateClient.update"
+		} )
+	end, false )
+	f1_local5 = RemoveBotButton
+	f1_local4 = RemoveBotButton.subscribeToModel
+	f1_local6 = Engine[@"getglobalmodel"]()
+	f1_local4( f1_local5, f1_local6.offlineScreenState, function ( f46_arg0 )
+		f1_arg0:updateElementState( RemoveBotButton, {
+			name = "model_validation",
+			menu = f1_arg0,
+			controller = f1_arg1,
+			modelValue = f46_arg0:get(),
+			modelName = "offlineScreenState"
+		} )
+	end, false )
+	f1_local5 = RemoveBotButton
+	f1_local4 = RemoveBotButton.subscribeToModel
+	f1_local6 = Engine[@"getglobalmodel"]()
+	f1_local4( f1_local5, f1_local6["MapVote.mapVoteGameModeNext"], function ( f47_arg0 )
+		f1_arg0:updateElementState( RemoveBotButton, {
+			name = "model_validation",
+			menu = f1_arg0,
+			controller = f1_arg1,
+			modelValue = f47_arg0:get(),
+			modelName = "MapVote.mapVoteGameModeNext"
+		} )
+	end, false )
+	RemoveBotButton.DirectorSelectButtonMiniInternal.MiddleText:setText( LocalizeToUpperString( @"hash_5FD88DBB329D1EC9" ) )
+	RemoveBotButton.DirectorSelectButtonMiniInternal.MiddleText:setTTF("ttmussels_regular")
+	RemoveBotButton.DirectorSelectButtonMiniInternal.MiddleTextFocus:setText( LocalizeToUpperString( @"hash_5FD88DBB329D1EC9" ) )
+	RemoveBotButton.DirectorSelectButtonMiniInternal.MiddleTextFocus:setTTF("ttmussels_regular")
+	RemoveBotButton:appendEventHandler( "on_session_start", function ( f48_arg0, f48_arg1 )
+		f48_arg1.menu = f48_arg1.menu or f1_arg0
+		CoD.Menu.UpdateButtonShownState( f48_arg0, f1_arg0, f1_arg1, Enum[@"luibutton"][@"lui_key_xba_pscross"] )
+	end )
+	RemoveBotButton:appendEventHandler( "on_session_end", function ( f49_arg0, f49_arg1 )
+		f49_arg1.menu = f49_arg1.menu or f1_arg0
+		CoD.Menu.UpdateButtonShownState( f49_arg0, f1_arg0, f1_arg1, Enum[@"luibutton"][@"lui_key_xba_pscross"] )
+	end )
+	f1_local5 = RemoveBotButton
+	f1_local4 = RemoveBotButton.subscribeToModel
+	f1_local6 = Engine[@"getglobalmodel"]()
+	f1_local4( f1_local5, f1_local6["lobbyRoot.lobbyNav"], function ( f50_arg0, f50_arg1 )
+		CoD.Menu.UpdateButtonShownState( f50_arg1, f1_arg0, f1_arg1, Enum[@"luibutton"][@"lui_key_xba_pscross"] )
+	end, false )
+	f1_local5 = RemoveBotButton
+	f1_local4 = RemoveBotButton.subscribeToModel
+	f1_local6 = Engine[@"getglobalmodel"]()
+	f1_local4( f1_local5, f1_local6["lobbyRoot.gameClient.update"], function ( f51_arg0, f51_arg1 )
+		CoD.Menu.UpdateButtonShownState( f51_arg1, f1_arg0, f1_arg1, Enum[@"luibutton"][@"lui_key_xba_pscross"] )
+	end, false )
+	f1_local5 = RemoveBotButton
+	f1_local4 = RemoveBotButton.subscribeToModel
+	f1_local6 = Engine[@"getglobalmodel"]()
+	f1_local4( f1_local5, f1_local6["lobbyRoot.privateClient.update"], function ( f52_arg0, f52_arg1 )
+		CoD.Menu.UpdateButtonShownState( f52_arg1, f1_arg0, f1_arg1, Enum[@"luibutton"][@"lui_key_xba_pscross"] )
+	end, false )
+	RemoveBotButton:appendEventHandler( "input_source_changed", function ( f53_arg0, f53_arg1 )
+		f53_arg1.menu = f53_arg1.menu or f1_arg0
+		CoD.Menu.UpdateButtonShownState( f53_arg0, f1_arg0, f1_arg1, Enum[@"luibutton"][@"lui_key_xba_pscross"] )
+	end )
+	f1_local5 = RemoveBotButton
+	f1_local4 = RemoveBotButton.subscribeToModel
+	f1_local6 = Engine[@"getmodelforcontroller"]( f1_arg1 )
+	f1_local4( f1_local5, f1_local6.LastInput, function ( f54_arg0, f54_arg1 )
+		CoD.Menu.UpdateButtonShownState( f54_arg1, f1_arg0, f1_arg1, Enum[@"luibutton"][@"lui_key_xba_pscross"] )
+	end, false )
+	RemoveBotButton:registerEventHandler( "gain_focus", function ( element, event )
+		local f55_local0 = nil
+		if element.gainFocus then
+			f55_local0 = element:gainFocus( event )
+		elseif element.super.gainFocus then
+			f55_local0 = element.super:gainFocus( event )
+		end
+		CoD.Menu.UpdateButtonShownState( element, f1_arg0, f1_arg1, Enum[@"luibutton"][@"lui_key_xba_pscross"] )
+		return f55_local0
+	end )
+	f1_arg0:AddButtonCallbackFunction( RemoveBotButton, f1_arg1, Enum[@"luibutton"][@"lui_key_xba_pscross"], "ui_confirm", function ( element, menu, controller, model )
+		if IsLobbyHostOfCurrentMenu() and IsBooleanDvarSet( "lobby_hostBots" ) and IsMouseOrKeyboard( controller ) then
+			PlaySoundAlias( "uin_toggle_generic" )
+			RemoveLobbyBots( self, element, controller, "", menu )
+			return true
+		elseif IsLobbyHostOfCurrentMenu() and IsBooleanDvarSet( "lobby_hostBots" ) then
+			PlaySoundAlias( "uin_toggle_generic" )
+			RemoveLobbyBots( self, element, controller, "", menu )
+			return true
+		else
+			
+		end
+	end, function ( element, menu, controller )
+		if IsLobbyHostOfCurrentMenu() and IsBooleanDvarSet( "lobby_hostBots" ) and IsMouseOrKeyboard( controller ) then
+			CoD.Menu.SetButtonLabel( menu, Enum[@"luibutton"][@"lui_key_xba_pscross"], @"hash_0", nil, "ui_confirm" )
+			return false
+		elseif IsLobbyHostOfCurrentMenu() and IsBooleanDvarSet( "lobby_hostBots" ) then
+			CoD.Menu.SetButtonLabel( menu, Enum[@"luibutton"][@"lui_key_xba_pscross"], @"hash_761333AE050EC552", nil, "ui_confirm" )
+			return true
+		else
+			return false
+		end
+	end, false )
+	self:addElement( RemoveBotButton )
+	self.RemoveBotButton = RemoveBotButton
+	
+	self:mergeStateConditions( {
+		{
+			stateName = "ShowGameRules",
+			condition = function ( menu, element, event )
+				return AlwaysTrue()
+			end
+		},
+		{
+			stateName = "ShowAddRemoveBots",
+			condition = function ( menu, element, event )
+				return AlwaysTrue()
+			end
+		}
+	} )
+	DirectorCustomLobbySettings.id = "DirectorCustomLobbySettings"
+	AddBotButton.id = "AddBotButton"
+    LaunchGameButton.id = "LaunchGameButton"
+	RemoveBotButton.id = "RemoveBotButton"
+	DirectorReadyButton.id = "DirectorReadyButton" 
+	DirectorPreGameButton.id = "DirectorPreGameButton" 
+	ArenaEventButtons.id = "ArenaEventButtons" 
+	ArenaEventProgressButton.id = "ArenaEventProgressButton" 
+	LUI.OverrideFunction_CallOriginalSecond( self, "close", self.__onClose ) 
+	
+	if PostLoadFunc then
+		PostLoadFunc( self, f1_arg1, f1_arg0 ) 
+	end
+	
+	local f1_local11 = self 
+	CoD.LobbyUtility.InitOverheadNamesPreLobby( f1_arg0, f1_arg1, overheadNameContainer ) 
+	return self
+end
+ 
+CoD.directorArenaMatchmaking.__onClose = function ( f22_arg0 )
+	f22_arg0.StageNotificationContainer:close() 
+	f22_arg0.TopBar:close() 
+	f22_arg0.MapVote:close() 
+	f22_arg0.MapVotePC:close() 
+	f22_arg0.DirectorReadyButton:close() 
+	f22_arg0.overheadNameContainer:close() 
+	f22_arg0.DirectorPreGameButton:close() 
+	f22_arg0.ArenaEventButtons:close() 
+	f22_arg0.ArenaDailyBonus:close() 
+	f22_arg0.ArenaEventProgressButton:close() 
+end
+ 
+
+
+-- Arena prelobby offline game
 CoD.directorArenaPregame = InheritFrom( LUI.UIElement ) 
 CoD.directorArenaPregame.__defaultWidth = 1920 
 CoD.directorArenaPregame.__defaultHeight = 1080 
@@ -3991,152 +4988,7 @@ CoD.directorArenaPregame.new = function ( f1_arg0, f1_arg1, f1_arg2, f1_arg3, f1
 	self:addElement( pckeyboardNavigationRedirector ) 
 	self.pckeyboardNavigationRedirector = pckeyboardNavigationRedirector 
 
-	local SetUpMatchButton = CoD.DirectorPreGameSetUpMatch.new( f1_arg0, f1_arg1, 0.5, 0.5, -505, 406, 1, 1, -399, -184 )
-    SetUpMatchButton:mergeStateConditions( {
-	    {
-		    stateName = "Unselectable",
-		    condition = function ( menu, element, event )
-			    return not IsLobbyHostOfCurrentMenu()
-		    end
-	    },
-	    {
-		    stateName = "Visible",
-		    condition = function ( menu, element, event )
-				return Engine[@"getdvarint"](@"hash_4FF45B41C6046F8") >= 12 and IsArenaMode()
-		    end
-	    }
-    } ) 
-    SetUpMatchButton:appendEventHandler( "on_session_start", function ( f25_arg0, f25_arg1 )
-	    f25_arg1.menu = f25_arg1.menu or f1_arg0 
-	    f1_arg0:updateElementState( SetUpMatchButton, f25_arg1 ) 
-    end ) 
-    SetUpMatchButton:appendEventHandler( "on_session_end", function ( f26_arg0, f26_arg1 )
-	    f26_arg1.menu = f26_arg1.menu or f1_arg0 
-	    f1_arg0:updateElementState( SetUpMatchButton, f26_arg1 ) 
-    end ) 
-    local ZMLoadoutPreviewInfo = SetUpMatchButton 
-    local StartButton = SetUpMatchButton.subscribeToModel 
-    local DirectorLobbyPoseMembersZM = Engine[@"hash_78DF2E5447F384B9"]() 
-    StartButton( ZMLoadoutPreviewInfo, DirectorLobbyPoseMembersZM["lobbyRoot.lobbyNav"], function ( f27_arg0 )
-	    f1_arg0:updateElementState( SetUpMatchButton, {
-		    name = "model_validation",
-		    menu = f1_arg0,
-		    controller = f1_arg1,
-		    modelValue = f27_arg0:get(),
-		    modelName = "lobbyRoot.lobbyNav"
-	    } ) 
-    end, false ) 
-    ZMLoadoutPreviewInfo = SetUpMatchButton 
-    StartButton = SetUpMatchButton.subscribeToModel 
-    DirectorLobbyPoseMembersZM = Engine[@"hash_78DF2E5447F384B9"]() 
-    StartButton( ZMLoadoutPreviewInfo, DirectorLobbyPoseMembersZM["lobbyRoot.gameClient.update"], function ( f28_arg0 )
-	    f1_arg0:updateElementState( SetUpMatchButton, {
-		    name = "model_validation",
-		    menu = f1_arg0,
-		    controller = f1_arg1,
-		    modelValue = f28_arg0:get(),
-		    modelName = "lobbyRoot.gameClient.update"
-	    } ) 
-    end, false ) 
-    ZMLoadoutPreviewInfo = SetUpMatchButton 
-    StartButton = SetUpMatchButton.subscribeToModel 
-    DirectorLobbyPoseMembersZM = Engine[@"hash_78DF2E5447F384B9"]() 
-    StartButton( ZMLoadoutPreviewInfo, DirectorLobbyPoseMembersZM["lobbyRoot.privateClient.update"], function ( f29_arg0 )
-	    f1_arg0:updateElementState( SetUpMatchButton, {
-		    name = "model_validation",
-		    menu = f1_arg0,
-		    controller = f1_arg1,
-		    modelValue = f29_arg0:get(),
-		    modelName = "lobbyRoot.privateClient.update"
-	    } ) 
-    end, false ) 
-        SetUpMatchButton.MapImage.PlaylistHeader.GameModeText:setText( Engine[@"hash_4F9F1239CFD921FE"]( @"hash_2FA47140D97F89D" ) ) 
-        SetUpMatchButton.MapImage.PlaylistHeader.GameModeText:setTTF( "ttmussels_regular" ) 
-        ZMLoadoutPreviewInfo = SetUpMatchButton 
-        StartButton = SetUpMatchButton.subscribeToModel 
-        DirectorLobbyPoseMembersZM = Engine[@"hash_78DF2E5447F384B9"]() 
-        StartButton( ZMLoadoutPreviewInfo, DirectorLobbyPoseMembersZM["lobbyRoot.lobbyNav"], function ( f30_arg0, f30_arg1 )
-	    CoD.Menu.UpdateButtonShownState( f30_arg1, f1_arg0, f1_arg1, Enum[@"hash_3DD78803F918E9D"][@"hash_3755DA1E2E7C263F"] ) 
-    end, false ) 
-        ZMLoadoutPreviewInfo = SetUpMatchButton 
-        StartButton = SetUpMatchButton.subscribeToModel 
-        DirectorLobbyPoseMembersZM = Engine[@"hash_78DF2E5447F384B9"]() 
-        StartButton( ZMLoadoutPreviewInfo, DirectorLobbyPoseMembersZM["lobbyRoot.lobbyTimeRemaining"], function ( f31_arg0, f31_arg1 )
-	    CoD.Menu.UpdateButtonShownState( f31_arg1, f1_arg0, f1_arg1, Enum[@"hash_3DD78803F918E9D"][@"hash_3755DA1E2E7C263F"] ) 
-    end, false ) 
-    SetUpMatchButton:appendEventHandler( "on_session_start", function ( f32_arg0, f32_arg1 )
-	    f32_arg1.menu = f32_arg1.menu or f1_arg0 
-	    CoD.Menu.UpdateButtonShownState( f32_arg0, f1_arg0, f1_arg1, Enum[@"hash_3DD78803F918E9D"][@"hash_3755DA1E2E7C263F"] ) 
-    end ) 
-    SetUpMatchButton:appendEventHandler( "on_session_end", function ( f33_arg0, f33_arg1 )
-	    f33_arg1.menu = f33_arg1.menu or f1_arg0 
-	    CoD.Menu.UpdateButtonShownState( f33_arg0, f1_arg0, f1_arg1, Enum[@"hash_3DD78803F918E9D"][@"hash_3755DA1E2E7C263F"] ) 
-    end ) 
-        ZMLoadoutPreviewInfo = SetUpMatchButton 
-        StartButton = SetUpMatchButton.subscribeToModel 
-        DirectorLobbyPoseMembersZM = Engine[@"hash_78DF2E5447F384B9"]() 
-        StartButton( ZMLoadoutPreviewInfo, DirectorLobbyPoseMembersZM["lobbyRoot.gameClient.update"], function ( f34_arg0, f34_arg1 )
-	    CoD.Menu.UpdateButtonShownState( f34_arg1, f1_arg0, f1_arg1, Enum[@"hash_3DD78803F918E9D"][@"hash_3755DA1E2E7C263F"] ) 
-    end, false ) 
-        ZMLoadoutPreviewInfo = SetUpMatchButton 
-        StartButton = SetUpMatchButton.subscribeToModel 
-        DirectorLobbyPoseMembersZM = Engine[@"hash_78DF2E5447F384B9"]() 
-        StartButton( ZMLoadoutPreviewInfo, DirectorLobbyPoseMembersZM["lobbyRoot.privateClient.update"], function ( f35_arg0, f35_arg1 )
-	    CoD.Menu.UpdateButtonShownState( f35_arg1, f1_arg0, f1_arg1, Enum[@"hash_3DD78803F918E9D"][@"hash_3755DA1E2E7C263F"] ) 
-    end, false ) 
-    SetUpMatchButton:registerEventHandler( "gain_focus", function ( element, event )
-	    local f36_local0 = nil 
-	    if element.gainFocus then
-		    f36_local0 = element:gainFocus( event ) 
-	    elseif element.super.gainFocus then
-		    f36_local0 = element.super:gainFocus( event ) 
-	    end
-	    CoD.Menu.UpdateButtonShownState( element, f1_arg0, f1_arg1, Enum[@"hash_3DD78803F918E9D"][@"hash_3755DA1E2E7C263F"] ) 
-	    return f36_local0
-    end ) 
-    f1_arg0:AddButtonCallbackFunction( SetUpMatchButton, f1_arg1, Enum[@"hash_3DD78803F918E9D"][@"hash_3755DA1E2E7C263F"], "ui_confirm", function ( element, menu, controller, model )
-	    if IsWarzone() and not CoD.ModelUtility.IsGlobalModelValueGreaterThan( "lobbyRoot.lobbyTimeRemaining", 0 ) and IsLobbyHostOfCurrentMenu() then
-		    SetFocusToElement( self, "ShieldOfflineStartButton", controller ) 
-		    SetLoseFocusToElement( self, "SetUpMatchButton", controller ) 
-		    CoD.DirectorUtility.DirectorOpenOverlayWithCurrentMenuMode( menu, controller, "DirectorCustomGameSetUpWZ" ) 
-		    PlaySoundAlias( "uin_toggle_generic" ) 
-		    return true
-	    elseif not CoD.ModelUtility.IsGlobalModelValueGreaterThan( "lobbyRoot.lobbyTimeRemaining", 0 ) and IsLobbyHostOfCurrentMenu() and not IsZombies() then
-		    SetFocusToElement( self, "ShieldOfflineStartButton", controller ) 
-		    SetLoseFocusToElement( self, "SetUpMatchButton", controller ) 
-		    CoD.DirectorUtility.DirectorOpenOverlayWithCurrentMenuMode( menu, controller, "DirectorCustomGameSetUp" ) 
-		    PlaySoundAlias( "uin_toggle_generic" ) 
-			Engine[@"setlobbymaxclients"](Enum[@"lobbytype"][@"lobby_type_game"], 12)
-			Engine[@"setlobbymaxclients"](Enum[@"lobbytype"][@"lobby_type_private"], 12)
-			Engine[@"setlobbymaxclients"](Engine[@"getprimarycontroller"](), 12)
-			Dvar[@"hash_4FF45B41C6046F8"]:set(12)
-			Engine[@"setmodelvalue"](Engine[@"createmodel"]( Engine[@"createmodel"]( Engine[@"getglobalmodel"](), "PartyPrivacy" ), "maxPlayers" ), 12)
-		    return true
-		elseif IsZombies() then
-		    --CoD.LobbyUtility.SetLeaderActivityAndOpenOverlay( self, controller, CoD.LobbyUtility.LeaderActivity.CHOOSING_MAP, "DirectorChooseMapAndGameType" ) 
-            SetFocusToElement( self, "ShieldOfflineStartButton", controller ) 
-		    SetLoseFocusToElement( self, "SetUpMatchButton", controller ) 
-		    CoD.DirectorUtility.DirectorOpenOverlayWithCurrentMenuMode( menu, controller, "DirectorChooseMapAndGameType" ) 
-		    PlaySoundAlias( "uin_toggle_generic" ) 
-		    return true  
-
-	    else
-	    end
-    end, function ( element, menu, controller )
-	    if IsWarzone() and not CoD.ModelUtility.IsGlobalModelValueGreaterThan( "lobbyRoot.lobbyTimeRemaining", 0 ) and IsLobbyHostOfCurrentMenu() then
-		    CoD.Menu.SetButtonLabel( menu, Enum[@"hash_3DD78803F918E9D"][@"hash_3755DA1E2E7C263F"], @"hash_6D0BB36CD318F55F", nil, "ui_confirm" ) 
-		    return true
-	    elseif not CoD.ModelUtility.IsGlobalModelValueGreaterThan( "lobbyRoot.lobbyTimeRemaining", 0 ) and IsLobbyHostOfCurrentMenu() then
-		    CoD.Menu.SetButtonLabel( menu, Enum[@"hash_3DD78803F918E9D"][@"hash_3755DA1E2E7C263F"], @"hash_6D0BB36CD318F55F", nil, "ui_confirm" ) 
-		    return true
-	    else
-		    return false
-	    end
-    end, false ) 
-    self:addElement( SetUpMatchButton ) 
-    self.SetUpMatchButton = SetUpMatchButton 
-
-    SetUpMatchButton.id = "SetUpMatchButton"
+	
 
 	-- lobby startgame button
 
@@ -4149,7 +5001,7 @@ CoD.directorArenaPregame.new = function ( f1_arg0, f1_arg1, f1_arg2, f1_arg3, f1
 		{
 			stateName = "Visible",
 			condition = function ( menu, element, event )
-				return Engine[@"getdvarint"](@"hash_4FF45B41C6046F8") >= 12 and IsArenaMode()
+				return Engine[@"getdvarint"](@"hash_4FF45B41C6046F8") >= 10 and IsArenaMode()
 			end
 		}
 	} )
@@ -4167,8 +5019,9 @@ CoD.directorArenaPregame.new = function ( f1_arg0, f1_arg1, f1_arg2, f1_arg3, f1
 	
 	f1_arg0:AddButtonCallbackFunction( ShieldOfflineStartButton, f1_arg1, Enum[@"hash_3DD78803F918E9D"][@"hash_3755DA1E2E7C263F"], "ui_confirm", function ( element, menu, controller, model )
 		if not IsZombies() then
-			Dvar[@"bot_difficulty"]:set(3)
+			--Dvar[@"bot_difficulty"]:set(3)
 			LaunchGameFunction(controller)
+			--Engine[@"exec"](Engine[@"getprimarycontroller"](), "LobbyLaunchGame")
 			PlaySoundAlias( "uin_press_generic" )
 			return true
 		else
@@ -4201,7 +5054,7 @@ CoD.directorArenaPregame.new = function ( f1_arg0, f1_arg1, f1_arg2, f1_arg3, f1
 		{
 			stateName = "Visible",
 			condition = function ( menu, element, event )
-				return Engine[@"getdvarint"](@"hash_4FF45B41C6046F8") >= 12 and Engine[@"hash_144FC97037CE42ED"]( Enum[@"hash_47CA2DE5266A94BF"][@"hash_40C46B73E8E18BA2"], f109_local1, Enum[@"hash_6575E471C039DBD6"][@"hash_17D6D125E5450799"] ) < 11 and IsArenaMode()
+				return Engine[@"getdvarint"](@"hash_4FF45B41C6046F8") >= 10 and Engine[@"hash_144FC97037CE42ED"]( Enum[@"hash_47CA2DE5266A94BF"][@"hash_40C46B73E8E18BA2"], f109_local1, Enum[@"hash_6575E471C039DBD6"][@"hash_17D6D125E5450799"] ) < 9 and IsArenaMode()			
 			end
 		}
 	} )
@@ -4222,7 +5075,7 @@ CoD.directorArenaPregame.new = function ( f1_arg0, f1_arg1, f1_arg2, f1_arg3, f1
 			CoD.DirectorUtility.ClearSelectedClient( controller )
 			SetFocusToElement( self, "ShieldOfflineStartButton", controller ) 
 			--AddLobbyBots( menu, controller )
-			Engine[@"hash_1CBDED49058F1E19"]( f107_local1, 17, false, 0 )
+			Engine[@"hash_1CBDED49058F1E19"]( f107_local1, 10, false, 0 )
 			PlaySoundAlias( "uin_toggle_generic" )
 			return true
 		else
@@ -4255,8 +5108,7 @@ CoD.directorArenaPregame.new = function ( f1_arg0, f1_arg1, f1_arg2, f1_arg3, f1
 		{
 			stateName = "Visible",
 			condition = function ( menu, element, event )
-				return Engine[@"getdvarint"](@"hash_4FF45B41C6046F8") >= 12 and Engine[@"hash_144FC97037CE42ED"]( Enum[@"hash_47CA2DE5266A94BF"][@"hash_40C46B73E8E18BA2"], f109_local1, Enum[@"hash_6575E471C039DBD6"][@"hash_17D6D125E5450799"] ) > 10 and IsArenaMode()
-				--return Engine[@"hash_144FC97037CE42ED"]( Enum[@"hash_47CA2DE5266A94BF"][@"hash_40C46B73E8E18BA2"], f109_local1, Enum[@"hash_6575E471C039DBD6"][@"hash_17D6D125E5450799"] ) > 0
+				return Engine[@"getdvarint"](@"hash_4FF45B41C6046F8") >= 10 and Engine[@"hash_144FC97037CE42ED"]( Enum[@"hash_47CA2DE5266A94BF"][@"hash_40C46B73E8E18BA2"], f109_local1, Enum[@"hash_6575E471C039DBD6"][@"hash_17D6D125E5450799"] ) > 8 and IsArenaMode()
 			end
 		}
 	} )
@@ -4278,7 +5130,7 @@ CoD.directorArenaPregame.new = function ( f1_arg0, f1_arg1, f1_arg2, f1_arg3, f1
 			SetFocusToElement( self, "ShieldOfflineAddBot", controller )
 			SetLoseFocusToElement( self, "ShieldOfflineRemoveBot", controller )
 			--RemoveLobbyBots( self, element, controller, "", menu )
-			Engine[@"hash_1A468BF674010CE8"]( f108_local1, 17 )
+			Engine[@"hash_1A468BF674010CE8"]( f108_local1, 10 )
 			PlaySoundAlias( "uin_toggle_generic" )
 			return true
 		else
@@ -4310,7 +5162,7 @@ CoD.directorArenaPregame.new = function ( f1_arg0, f1_arg1, f1_arg2, f1_arg3, f1
 		{
 			stateName = "Visible",
 			condition = function ( menu, element, event )
-				return not IsZombies() and Engine[@"getdvarint"](@"hash_4FF45B41C6046F8") <= 11 and IsArenaMode()
+				return not IsZombies() and Engine[@"getdvarint"](@"hash_4FF45B41C6046F8") <= 9 and IsArenaMode()
 			end
 		}
 	} )
@@ -4328,12 +5180,12 @@ CoD.directorArenaPregame.new = function ( f1_arg0, f1_arg1, f1_arg2, f1_arg3, f1
 	
 	f1_arg0:AddButtonCallbackFunction( ShieldOfflineButton, f1_arg1, Enum[@"hash_3DD78803F918E9D"][@"hash_3755DA1E2E7C263F"], "ui_confirm", function ( element, menu, controller, model )
 		if not IsZombies() then
-			Engine[@"setlobbymaxclients"](Enum[@"lobbytype"][@"lobby_type_game"], 12)
-			Engine[@"setlobbymaxclients"](Enum[@"lobbytype"][@"lobby_type_private"], 12)
-			Engine[@"setlobbymaxclients"](Engine[@"getprimarycontroller"](), 12)
-			Dvar[@"hash_4FF45B41C6046F8"]:set(12)
-			Engine[@"setmodelvalue"](Engine[@"createmodel"]( Engine[@"createmodel"]( Engine[@"getglobalmodel"](), "PartyPrivacy" ), "maxPlayers" ), 12)
-			--Engine[@"hash_1CBDED49058F1E19"]( f107_local1, 11, false, 0 ) --populate lobby with bots at startup disable in arena
+			Engine[@"setlobbymaxclients"](Enum[@"lobbytype"][@"lobby_type_game"], 10)
+			Engine[@"setlobbymaxclients"](Enum[@"lobbytype"][@"lobby_type_private"], 10)
+			Engine[@"setlobbymaxclients"](Engine[@"getprimarycontroller"](), 10)
+			Dvar[@"hash_4FF45B41C6046F8"]:set(10)
+			Engine[@"setmodelvalue"](Engine[@"createmodel"]( Engine[@"createmodel"]( Engine[@"getglobalmodel"](), "PartyPrivacy" ), "maxPlayers" ), 10)
+			Engine[@"hash_1CBDED49058F1E19"]( f107_local1, 10, false, 0 ) --populate lobby with bots at startup disable in arena
 			PlaySoundAlias( "uin_press_generic" )
 			SetFocusToElement( self, "SetUpMatchButton", controller )
 			SetLoseFocusToElement( self, "ShieldOfflineButton", controller )
@@ -4374,7 +5226,7 @@ CoD.directorArenaPregame.new = function ( f1_arg0, f1_arg1, f1_arg2, f1_arg3, f1
 		{
 			stateName = "Visible",
 			condition = function ( menu, element, event )
-				return IsPartyLeader( f1_arg1 ) and Engine[@"getdvarint"](@"hash_4FF45B41C6046F8") <= 11
+				return IsPartyLeader( f1_arg1 ) and Engine[@"getdvarint"](@"hash_4FF45B41C6046F8") <= 9
 			end
 		}
 	} ) 
@@ -4603,7 +5455,7 @@ CoD.directorArenaPregame.new = function ( f1_arg0, f1_arg1, f1_arg2, f1_arg3, f1
 						f27_local0 = CoD.DirectorUtility.ShowDirectorArena( f1_arg1 )  
 					end
 				end
-				return f27_local0 and Engine[@"getdvarint"](@"hash_4FF45B41C6046F8") <= 11
+				return f27_local0 and Engine[@"getdvarint"](@"hash_4FF45B41C6046F8") <= 9
 			end
 		}
 	} ) 
@@ -4777,7 +5629,7 @@ CoD.directorArenaPregame.new = function ( f1_arg0, f1_arg1, f1_arg2, f1_arg3, f1
 	self:addElement( ArenaEventButtons ) 
 	self.ArenaEventButtons = ArenaEventButtons 
 	
-	ArenaEventProgressButton = CoD.ArenaEventProgressButton.new( f1_arg0, f1_arg1, 0.5, 0.5, 514, 896, 1, 1, -279, -209 ) 
+	ArenaEventProgressButton = CoD.ArenaEventProgressButton.new( f1_arg0, f1_arg1, 0.5, 0.5, 514, 896, 1, 1, -231, -209 ) 
 	self:addElement( ArenaEventProgressButton ) 
 	self.ArenaEventProgressButton = ArenaEventProgressButton 
 	
@@ -4790,10 +5642,183 @@ CoD.directorArenaPregame.new = function ( f1_arg0, f1_arg1, f1_arg2, f1_arg3, f1
 	self:addElement( ArenaDailyBonus ) 
 	self.ArenaDailyBonus = ArenaDailyBonus 
 	
-	local ArenaMapAndGameType = CoD.ArenaMapAndGameType.new( f1_arg0, f1_arg1, 0.5, 0.5, 514, 896, 1, 1, -443, -293 ) 
+	local ArenaMapAndGameType = CoD.ArenaMapAndGameType.new( f1_arg0, f1_arg1, 0.5, 0.5, 514, 896, 1, 1, -443, -293 )
+	ArenaMapAndGameType:mergeStateConditions( {
+		{
+			stateName = "Visible",
+			condition = function ( menu, element, event )
+				local f27_local0 = IsLobbyHostOfCurrentMenu() 
+				if f27_local0 then
+					f27_local0 = IsArenaMode() 
+					if f27_local0 then
+						f27_local0 = CoD.DirectorUtility.ShowDirectorArena( f1_arg1 )  
+					end
+				end
+				return f27_local0 and Engine[@"getdvarint"](@"hash_4FF45B41C6046F8") <= 9
+			end
+		}
+	} ) 
+	ArenaMapAndGameType:appendEventHandler( "on_session_start", function ( f228_arg0, f28_arg1 )
+		f28_arg1.menu = f28_arg1.menu or f1_arg0 
+		f1_arg0:updateElementState( ArenaMapAndGameType, f28_arg1 ) 
+	end ) 
+	ArenaMapAndGameType:appendEventHandler( "on_session_end", function ( f229_arg0, f29_arg1 )
+		f29_arg1.menu = f29_arg1.menu or f1_arg0 
+		f1_arg0:updateElementState( ArenaMapAndGameType, f29_arg1 ) 
+	end ) 
 	self:addElement( ArenaMapAndGameType ) 
-	self.ArenaMapAndGameType = ArenaMapAndGameType 
-	
+	self.ArenaMapAndGameType = ArenaMapAndGameType
+
+	--local SetUpMatchButton = CoD.DirectorPreGameSetUpMatch.new( f1_arg0, f1_arg1, 0.5, 0.5, -505, 406, 1, 1, -399, -184 ) 0.5, 0.5, 514, 896, 1, 1, -368, -188
+	local SetUpMatchButton = CoD.DirectorPreGameSetUpMatch.new( f1_arg0, f1_arg1, 0.5, 0.5, 514, 896, 1, 1, -443, -188 )
+    SetUpMatchButton:mergeStateConditions( {
+	    {
+		    stateName = "Unselectable",
+		    condition = function ( menu, element, event )
+			    return not IsLobbyHostOfCurrentMenu()
+		    end
+	    },
+	    {
+		    stateName = "Visible",
+		    condition = function ( menu, element, event )
+				return Engine[@"getdvarint"](@"hash_4FF45B41C6046F8") >= 10 and IsArenaMode()
+		    end
+	    }
+    } ) 
+    SetUpMatchButton:appendEventHandler( "on_session_start", function ( f25_arg0, f25_arg1 )
+	    f25_arg1.menu = f25_arg1.menu or f1_arg0 
+	    f1_arg0:updateElementState( SetUpMatchButton, f25_arg1 ) 
+    end ) 
+    SetUpMatchButton:appendEventHandler( "on_session_end", function ( f26_arg0, f26_arg1 )
+	    f26_arg1.menu = f26_arg1.menu or f1_arg0 
+	    f1_arg0:updateElementState( SetUpMatchButton, f26_arg1 ) 
+    end ) 
+
+    local ZMLoadoutPreviewInfo = SetUpMatchButton 
+    local StartButton = SetUpMatchButton.subscribeToModel 
+    local DirectorLobbyPoseMembersZM = Engine[@"hash_78DF2E5447F384B9"]() 
+    StartButton( ZMLoadoutPreviewInfo, DirectorLobbyPoseMembersZM["lobbyRoot.lobbyNav"], function ( f27_arg0 )
+	    f1_arg0:updateElementState( SetUpMatchButton, {
+		    name = "model_validation",
+		    menu = f1_arg0,
+		    controller = f1_arg1,
+		    modelValue = f27_arg0:get(),
+		    modelName = "lobbyRoot.lobbyNav"
+	    } ) 
+    end, false ) 
+    ZMLoadoutPreviewInfo = SetUpMatchButton 
+    StartButton = SetUpMatchButton.subscribeToModel 
+    DirectorLobbyPoseMembersZM = Engine[@"hash_78DF2E5447F384B9"]() 
+    StartButton( ZMLoadoutPreviewInfo, DirectorLobbyPoseMembersZM["lobbyRoot.gameClient.update"], function ( f28_arg0 )
+	    f1_arg0:updateElementState( SetUpMatchButton, {
+		    name = "model_validation",
+		    menu = f1_arg0,
+		    controller = f1_arg1,
+		    modelValue = f28_arg0:get(),
+		    modelName = "lobbyRoot.gameClient.update"
+	    } ) 
+    end, false ) 
+    ZMLoadoutPreviewInfo = SetUpMatchButton 
+    StartButton = SetUpMatchButton.subscribeToModel 
+    DirectorLobbyPoseMembersZM = Engine[@"hash_78DF2E5447F384B9"]() 
+    StartButton( ZMLoadoutPreviewInfo, DirectorLobbyPoseMembersZM["lobbyRoot.privateClient.update"], function ( f29_arg0 )
+	    f1_arg0:updateElementState( SetUpMatchButton, {
+		    name = "model_validation",
+		    menu = f1_arg0,
+		    controller = f1_arg1,
+		    modelValue = f29_arg0:get(),
+		    modelName = "lobbyRoot.privateClient.update"
+	    } ) 
+    end, false ) 
+        SetUpMatchButton.MapImage.PlaylistHeader.GameModeText:setText( LocalizeToUpperString( @"hash_11496B17DC3093F9" ) ) 
+        SetUpMatchButton.MapImage.PlaylistHeader.GameModeText:setTTF( "ttmussels_regular" ) 
+        ZMLoadoutPreviewInfo = SetUpMatchButton 
+        StartButton = SetUpMatchButton.subscribeToModel 
+        DirectorLobbyPoseMembersZM = Engine[@"hash_78DF2E5447F384B9"]() 
+        StartButton( ZMLoadoutPreviewInfo, DirectorLobbyPoseMembersZM["lobbyRoot.lobbyNav"], function ( f30_arg0, f30_arg1 )
+	    CoD.Menu.UpdateButtonShownState( f30_arg1, f1_arg0, f1_arg1, Enum[@"hash_3DD78803F918E9D"][@"hash_3755DA1E2E7C263F"] ) 
+    end, false ) 
+        ZMLoadoutPreviewInfo = SetUpMatchButton 
+        StartButton = SetUpMatchButton.subscribeToModel 
+        DirectorLobbyPoseMembersZM = Engine[@"hash_78DF2E5447F384B9"]() 
+        StartButton( ZMLoadoutPreviewInfo, DirectorLobbyPoseMembersZM["lobbyRoot.lobbyTimeRemaining"], function ( f31_arg0, f31_arg1 )
+	    CoD.Menu.UpdateButtonShownState( f31_arg1, f1_arg0, f1_arg1, Enum[@"hash_3DD78803F918E9D"][@"hash_3755DA1E2E7C263F"] ) 
+    end, false ) 
+    SetUpMatchButton:appendEventHandler( "on_session_start", function ( f32_arg0, f32_arg1 )
+	    f32_arg1.menu = f32_arg1.menu or f1_arg0 
+	    CoD.Menu.UpdateButtonShownState( f32_arg0, f1_arg0, f1_arg1, Enum[@"hash_3DD78803F918E9D"][@"hash_3755DA1E2E7C263F"] ) 
+    end ) 
+    SetUpMatchButton:appendEventHandler( "on_session_end", function ( f33_arg0, f33_arg1 )
+	    f33_arg1.menu = f33_arg1.menu or f1_arg0 
+	    CoD.Menu.UpdateButtonShownState( f33_arg0, f1_arg0, f1_arg1, Enum[@"hash_3DD78803F918E9D"][@"hash_3755DA1E2E7C263F"] ) 
+    end ) 
+        ZMLoadoutPreviewInfo = SetUpMatchButton 
+        StartButton = SetUpMatchButton.subscribeToModel 
+        DirectorLobbyPoseMembersZM = Engine[@"hash_78DF2E5447F384B9"]() 
+        StartButton( ZMLoadoutPreviewInfo, DirectorLobbyPoseMembersZM["lobbyRoot.gameClient.update"], function ( f34_arg0, f34_arg1 )
+	    CoD.Menu.UpdateButtonShownState( f34_arg1, f1_arg0, f1_arg1, Enum[@"hash_3DD78803F918E9D"][@"hash_3755DA1E2E7C263F"] ) 
+    end, false ) 
+        ZMLoadoutPreviewInfo = SetUpMatchButton 
+        StartButton = SetUpMatchButton.subscribeToModel 
+        DirectorLobbyPoseMembersZM = Engine[@"hash_78DF2E5447F384B9"]() 
+        StartButton( ZMLoadoutPreviewInfo, DirectorLobbyPoseMembersZM["lobbyRoot.privateClient.update"], function ( f35_arg0, f35_arg1 )
+	    CoD.Menu.UpdateButtonShownState( f35_arg1, f1_arg0, f1_arg1, Enum[@"hash_3DD78803F918E9D"][@"hash_3755DA1E2E7C263F"] ) 
+    end, false ) 
+    SetUpMatchButton:registerEventHandler( "gain_focus", function ( element, event )
+	    local f36_local0 = nil 
+	    if element.gainFocus then
+		    f36_local0 = element:gainFocus( event ) 
+	    elseif element.super.gainFocus then
+		    f36_local0 = element.super:gainFocus( event ) 
+	    end
+	    CoD.Menu.UpdateButtonShownState( element, f1_arg0, f1_arg1, Enum[@"hash_3DD78803F918E9D"][@"hash_3755DA1E2E7C263F"] ) 
+	    return f36_local0
+    end ) 
+    f1_arg0:AddButtonCallbackFunction( SetUpMatchButton, f1_arg1, Enum[@"hash_3DD78803F918E9D"][@"hash_3755DA1E2E7C263F"], "ui_confirm", function ( element, menu, controller, model )
+	    if IsWarzone() and not CoD.ModelUtility.IsGlobalModelValueGreaterThan( "lobbyRoot.lobbyTimeRemaining", 0 ) and IsLobbyHostOfCurrentMenu() then
+		    SetFocusToElement( self, "ShieldOfflineStartButton", controller ) 
+		    SetLoseFocusToElement( self, "SetUpMatchButton", controller ) 
+		    CoD.DirectorUtility.DirectorOpenOverlayWithCurrentMenuMode( menu, controller, "DirectorCustomGameSetUpWZ" ) 
+		    PlaySoundAlias( "uin_toggle_generic" ) 
+		    return true
+	    elseif not CoD.ModelUtility.IsGlobalModelValueGreaterThan( "lobbyRoot.lobbyTimeRemaining", 0 ) and IsLobbyHostOfCurrentMenu() and not IsZombies() then
+		    SetFocusToElement( self, "ShieldOfflineStartButton", controller ) 
+		    SetLoseFocusToElement( self, "SetUpMatchButton", controller ) 
+		    CoD.DirectorUtility.DirectorOpenOverlayWithCurrentMenuMode( menu, controller, "DirectorCustomGameSetUp" ) 
+			--CoD.LobbyUtility.SetLeaderActivityAndOpenOverlay( self, controller, CoD.LobbyUtility.LeaderActivity.CHOOSING_MAP, "DirectorChooseMapAndGameType" )
+		    PlaySoundAlias( "uin_toggle_generic" ) 
+			Engine[@"setlobbymaxclients"](Enum[@"lobbytype"][@"lobby_type_game"], 10)
+			Engine[@"setlobbymaxclients"](Enum[@"lobbytype"][@"lobby_type_private"], 10)
+			Engine[@"setlobbymaxclients"](Engine[@"getprimarycontroller"](), 10)
+			Dvar[@"hash_4FF45B41C6046F8"]:set(10)
+			Engine[@"setmodelvalue"](Engine[@"createmodel"]( Engine[@"createmodel"]( Engine[@"getglobalmodel"](), "PartyPrivacy" ), "maxPlayers" ), 10)
+		    return true
+		elseif IsZombies() then
+		    --CoD.LobbyUtility.SetLeaderActivityAndOpenOverlay( self, controller, CoD.LobbyUtility.LeaderActivity.CHOOSING_MAP, "DirectorChooseMapAndGameType" ) 
+            SetFocusToElement( self, "ShieldOfflineStartButton", controller ) 
+		    SetLoseFocusToElement( self, "SetUpMatchButton", controller ) 
+		    CoD.DirectorUtility.DirectorOpenOverlayWithCurrentMenuMode( menu, controller, "DirectorChooseMapAndGameType" ) 
+		    PlaySoundAlias( "uin_toggle_generic" ) 
+		    return true  
+
+	    else
+	    end
+    end, function ( element, menu, controller )
+	    if IsWarzone() and not CoD.ModelUtility.IsGlobalModelValueGreaterThan( "lobbyRoot.lobbyTimeRemaining", 0 ) and IsLobbyHostOfCurrentMenu() then
+		    CoD.Menu.SetButtonLabel( menu, Enum[@"hash_3DD78803F918E9D"][@"hash_3755DA1E2E7C263F"], @"hash_6D0BB36CD318F55F", nil, "ui_confirm" ) 
+		    return true
+	    elseif not CoD.ModelUtility.IsGlobalModelValueGreaterThan( "lobbyRoot.lobbyTimeRemaining", 0 ) and IsLobbyHostOfCurrentMenu() then
+		    CoD.Menu.SetButtonLabel( menu, Enum[@"hash_3DD78803F918E9D"][@"hash_3755DA1E2E7C263F"], @"hash_6D0BB36CD318F55F", nil, "ui_confirm" ) 
+		    return true
+	    else
+		    return false
+	    end
+    end, false ) 
+    self:addElement( SetUpMatchButton ) 
+    self.SetUpMatchButton = SetUpMatchButton 
+
+    SetUpMatchButton.id = "SetUpMatchButton"
+
 	local f1_local16 = CustomGamesButton 
 	local f1_local17 = CustomGamesButton.subscribeToModel 
 	local f1_local18 = Engine[@"hash_78DF2E5447F384B9"]() 
@@ -10520,7 +11545,7 @@ CoD.ZMLobbyButtonsContainer.new = function ( f1_arg0, f1_arg1, f1_arg2, f1_arg3,
 	self.anyChildUsesUpdateState = true
 	f1_arg0:addElementToPendingUpdateStateList( self )
 	
-	local PrivateMatchButton = CoD.DirectorPreGameButtonOption.new( f1_arg0, f1_arg1, 0, 0.48 - 0.20, 0, 0, 0, 1, 0, 0 )
+	local PrivateMatchButton = CoD.DirectorPreGameButtonOption.new( f1_arg0, f1_arg1, 0, 0.48, 0, 0, 0, 1, 0, 0 )
 	PrivateMatchButton:linkToElementModel( self, "PrivateMatchName", true, function ( model )
 		local f2_local0 = model:get()
 		if f2_local0 ~= nil then
@@ -10584,7 +11609,7 @@ CoD.ZMLobbyButtonsContainer.new = function ( f1_arg0, f1_arg1, f1_arg2, f1_arg3,
 	self:addElement( PrivateMatchButton )
 	self.PrivateMatchButton = PrivateMatchButton
 	
-	PublicMatchButton = CoD.DirectorPreGameButtonOption.new( f1_arg0, f1_arg1, 0.52 + 0.20, 1, 0, 0, 0, 1, 0, 0 )
+	PublicMatchButton = CoD.DirectorPreGameButtonOption.new( f1_arg0, f1_arg1, 0.52, 1, 0, 0, 0, 1, 0, 0 )
 	PublicMatchButton.DirectorSelectButtonMiniInternal.MiddleText:setText( LocalizeToUpperString( @"hash_621227B49B2CBED8" ) )
 	PublicMatchButton.DirectorSelectButtonMiniInternal.MiddleTextFocus:setText( LocalizeToUpperString( @"hash_621227B49B2CBED8" ) )
 	f1_local4 = PublicMatchButton
@@ -10658,13 +11683,13 @@ CoD.ZMLobbyButtonsContainer.new = function ( f1_arg0, f1_arg1, f1_arg2, f1_arg3,
 		{
 			stateName = "PublicMatchExcluded",
 			condition = function ( menu, element, event )
-				return AlwaysFalse()
+				return CoD.ModelUtility.IsGlobalDataSourceModelValueTrue( f1_arg1, "ZMLobbyExclusions", "PublicMatchExcluded" )
 			end
 		},
 		{
 			stateName = "PrivateMatchExcluded",
 			condition = function ( menu, element, event )
-				return AlwaysFalse()
+				return CoD.ModelUtility.IsGlobalDataSourceModelValueTrue( f1_arg1, "ZMLobbyExclusions", "PrivateMatchExcluded" )
 			end
 		}
 	} )
@@ -11509,7 +12534,8 @@ CoD.DirectorZMLobbySettingList.new = function ( f1_arg0, f1_arg1, f1_arg2, f1_ar
 	f1_arg0:AddButtonCallbackFunction( LaunchGameButton, f1_arg1, Enum[@"luibutton"][@"lui_key_xba_pscross"], "ui_confirm", function ( element, menu, controller, model )
 		if IsLobbyHostOfCurrentMenu() then
 			PlaySoundAlias( "uin_toggle_generic" )
-			LaunchGameFunction(controller)
+			LaunchGameFunctionPublic(controller)
+			--Engine[@"exec"](Engine[@"getprimarycontroller"](), "LobbyLaunchGame")
 			return true
 		else
 			-- fuck off
@@ -15442,8 +16468,8 @@ CoD.directorPregame.new = function ( f1_arg0, f1_arg1, f1_arg2, f1_arg3, f1_arg4
 	f1_arg0:AddButtonCallbackFunction( FindMatchButton, f1_arg1, Enum[@"hash_3DD78803F918E9D"][@"hash_3755DA1E2E7C263F"], "ui_confirm", function ( element, menu, controller, model )
 		if not IsZombies() then--and not CoD.DirectorUtility.IsNumClientsExceeded( controller ) and not CoD.DirectorUtility.ShouldLockFindMatchButton( controller ) then
 		    CoD.DirectorUtility.NavigateToPublicLobbyForCurrentMenuMode( menu, controller ) --Remove error max clients exceeded in Findgame button
-			--LaunchGameFunction( controller )
 			PlaySoundAlias( "uin_press_generic" )
+			Dvar[@"party_minplayers"]:set(1)
 			return true
 		elseif not IsZombies() then--and CoD.DirectorUtility.IsNumClientsExceeded( controller ) then
 			PlaySoundAlias( "uin_toggle_generic" )
@@ -15502,7 +16528,7 @@ CoD.directorPregame.new = function ( f1_arg0, f1_arg1, f1_arg2, f1_arg3, f1_arg4
 	self:addElement( FindMatchMissingDLCErrorTriangle )
 	self.FindMatchMissingDLCErrorTriangle = FindMatchMissingDLCErrorTriangle
 	
-	CustomGamesButton = CoD.DirectorPreGameButtonOption.new( f1_arg0, f1_arg1, 0.5, 0.5, 514, 896, 1, 1, -430, -384 ) 
+	CustomGamesButton = CoD.DirectorPreGameButtonOption.new( f1_arg0, f1_arg1, 0.5, 0.5, 514, 896, 1, 1, -423, -377 ) 
 	CustomGamesButton:mergeStateConditions( {
 		{
 			stateName = "Visible",
@@ -15662,6 +16688,14 @@ CoD.directorPregame.new = function ( f1_arg0, f1_arg1, f1_arg2, f1_arg3, f1_arg4
 		local f46_local0 = model:get()
 		if f46_local0 ~= nil then
 			CommonHeader.subtitle.subtitle:setText( Engine[@"hash_4F9F1239CFD921FE"]( f46_local0 ) )
+		end
+	end ) 
+	CommonHeader:subscribeToGlobalModel( f1_arg1, "MapVote", "mapVoteGameModeNext", function ( model )
+		local f47_local0 = model:get()
+		local f47_local1 = Engine[@"getdvarint"](@"hash_4FF45B41C6046F8") 
+		if f47_local0 ~= nil and f47_local1 >= 12 then
+			CommonHeader.subtitle.StageTitle:setText( CoD.GameTypeUtility.GameTypeToLocalizeToUpperName( f47_local0 ) )
+			--CommonHeader.subtitle.StageTitle:setRGB( 0.2, 0.5, 1 )
 		end
 	end )
 	self:addElement( CommonHeader )
@@ -16132,7 +17166,7 @@ CoD.directorPregame.new = function ( f1_arg0, f1_arg1, f1_arg2, f1_arg3, f1_arg4
 		    modelName = "lobbyRoot.privateClient.update"
 	    } ) 
     end, false ) 
-        SetUpMatchButton.MapImage.PlaylistHeader.GameModeText:setText( Engine[@"hash_4F9F1239CFD921FE"]( @"hash_2FA47140D97F89D" ) ) 
+        SetUpMatchButton.MapImage.PlaylistHeader.GameModeText:setText( LocalizeToUpperString( @"hash_11496B17DC3093F9" ) ) -----
         SetUpMatchButton.MapImage.PlaylistHeader.GameModeText:setTTF( "ttmussels_regular" ) 
         ZMLoadoutPreviewInfo = SetUpMatchButton 
         StartButton = SetUpMatchButton.subscribeToModel 
@@ -16187,6 +17221,7 @@ CoD.directorPregame.new = function ( f1_arg0, f1_arg1, f1_arg2, f1_arg3, f1_arg4
 		    SetFocusToElement( self, "ShieldOfflineStartButton", controller ) 
 		    SetLoseFocusToElement( self, "SetUpMatchButton", controller ) 
 		    CoD.DirectorUtility.DirectorOpenOverlayWithCurrentMenuMode( menu, controller, "DirectorCustomGameSetUp" ) 
+			--CoD.LobbyUtility.SetLeaderActivityAndOpenOverlay( self, controller, CoD.LobbyUtility.LeaderActivity.CHOOSING_MAP, "DirectorChooseMapAndGameType" )
 		    PlaySoundAlias( "uin_toggle_generic" ) 
 			Engine[@"setlobbymaxclients"](Enum[@"lobbytype"][@"lobby_type_game"], 12)
 			Engine[@"setlobbymaxclients"](Enum[@"lobbytype"][@"lobby_type_private"], 12)
@@ -16215,6 +17250,7 @@ CoD.directorPregame.new = function ( f1_arg0, f1_arg1, f1_arg2, f1_arg3, f1_arg4
 		    return false
 	    end
     end, false ) 
+	
     self:addElement( SetUpMatchButton ) 
     self.SetUpMatchButton = SetUpMatchButton 
 
@@ -16250,6 +17286,7 @@ CoD.directorPregame.new = function ( f1_arg0, f1_arg1, f1_arg2, f1_arg3, f1_arg4
 	f1_arg0:AddButtonCallbackFunction( ShieldOfflineStartButton, f1_arg1, Enum[@"hash_3DD78803F918E9D"][@"hash_3755DA1E2E7C263F"], "ui_confirm", function ( element, menu, controller, model )
 		if not IsZombies() then
 			LaunchGameFunction(controller)
+			--Engine[@"exec"](Engine[@"getprimarycontroller"](), "LobbyLaunchGame")
 			PlaySoundAlias( "uin_press_generic" )
 			return true
 		else
@@ -16273,7 +17310,7 @@ CoD.directorPregame.new = function ( f1_arg0, f1_arg1, f1_arg2, f1_arg3, f1_arg4
 
     -- pregame lobby add bot button 
 
-	local ShieldOfflineAddBot = CoD.DirectorPreGameButtonOption.new( f1_arg0, f1_arg1, 0.5, 0.5, 514, 896, 1, 1, -430, -384 ) 
+	local ShieldOfflineAddBot = CoD.DirectorPreGameButtonOption.new( f1_arg0, f1_arg1, 0.5, 0.5, 514, 896, 1, 1, -423, -377 ) 
 	ShieldOfflineAddBot.DirectorSelectButtonMiniInternal.MiddleText:setText( LocalizeToUpperString( @"hash_141A80D9A928673E" ) )
 	ShieldOfflineAddBot.DirectorSelectButtonMiniInternal.MiddleTextFocus:setText( LocalizeToUpperString( @"hash_141A80D9A928673E" ) )
 
@@ -16327,7 +17364,7 @@ CoD.directorPregame.new = function ( f1_arg0, f1_arg1, f1_arg2, f1_arg3, f1_arg4
 
     -- pregame lobby remove bot button 
 
-	local ShieldOfflineRemoveBot = CoD.DirectorPreGameButtonOption.new( f1_arg0, f1_arg1, 0.5, 0.5, 514, 896, 1, 1, -430, -384 ) 
+	local ShieldOfflineRemoveBot = CoD.DirectorPreGameButtonOption.new( f1_arg0, f1_arg1, 0.5, 0.5, 514, 896, 1, 1, -423, -377 ) 
 	ShieldOfflineRemoveBot.DirectorSelectButtonMiniInternal.MiddleText:setText( LocalizeToUpperString( @"hash_5FD88DBB329D1EC9" ) )
 	ShieldOfflineRemoveBot.DirectorSelectButtonMiniInternal.MiddleTextFocus:setText( LocalizeToUpperString( @"hash_5FD88DBB329D1EC9" ) )
 
